@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>五寮尖生乳存摺 V15.0</title>
+    <title>五寮尖生乳存摺 V15.0 旗艦版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -12,453 +12,464 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 核心修正：禁止雙擊縮放，優化觸控體驗 */
-        * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
+        /* 核心防護：禁止雙擊縮放與滾動回彈 */
+        html, body { 
+            height: 100%; overflow: hidden; 
             background-color: #f1f5f9; 
             font-family: 'Noto Sans TC', sans-serif; 
-            overscroll-behavior-y: none; /* 禁止下拉刷新干擾 */
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; /* 鎖死 Body 防止整體晃動 */
+            touch-action: manipulation; /* 關鍵：防止雙擊放大 */
+            -webkit-user-select: none; user-select: none;
         }
-        
         [v-cloak] { display: none; }
-
-        /* 表格結構優化 - 解決表頭跑掉問題 */
-        .table-container {
-            height: 100%;
-            overflow: auto;
-            position: relative;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch; /* iOS 滑動慣性 */
-        }
-
-        .milk-table { border-collapse: separate; border-spacing: 0; width: 100%; }
         
+        /* 表格架構 */
+        .table-container { 
+            height: 100%; overflow: auto; 
+            position: relative; 
+            /* 優化滾動順暢度 */
+            -webkit-overflow-scrolling: touch; 
+        }
+        .milk-table { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+        
+        /* 儲存格設定 */
         .milk-table th, .milk-table td { 
-            padding: 4px; text-align: center; 
-            border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; 
-            white-space: nowrap; font-size: 13px; height: 50px;
+            padding: 6px 4px; text-align: center; 
+            border-bottom: 1px solid #e2e8f0; 
+            border-right: 1px solid #f1f5f9; 
+            white-space: nowrap; height: 50px;
         }
 
-        /* 凍結首欄 (Timeline) */
+        /* 凍結首欄 (項目欄) */
         .milk-table td:first-child, .milk-table th:first-child {
-            position: sticky; left: 0; background-color: #fff; z-index: 30;
-            border-right: 2px solid #cbd5e1; text-align: left; padding-left: 8px;
-            color: #64748b; font-size: 11px; font-weight: 700; min-width: 100px;
-            box-shadow: 4px 0 8px rgba(0,0,0,0.02);
+            position: sticky; left: 0; z-index: 20;
+            background-color: #fff; 
+            border-right: 2px solid #cbd5e1; 
+            text-align: left; padding-left: 12px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+            min-width: 110px;
         }
-        
-        /* 凍結表頭 (日期) */
-        .milk-table thead th { 
-            position: sticky; top: 0; z-index: 20; background-color: #f8fafc; 
-            border-bottom: 2px solid #cbd5e1; height: 55px; 
-        }
-        /* 左上角那格最上層 */
-        .milk-table thead th:first-child { z-index: 40; background-color: #fff; }
 
-        /* 樣式定義 */
-        .num-font { font-family: 'Roboto Mono', monospace; font-size: 14px; letter-spacing: -0.5px; }
-        .val-input { color: #059669; font-weight: 600; } 
-        .val-deduct { color: #dc2626; font-weight: 600; }
-        .val-future { color: #7c3aed; font-weight: 700; background-color: #f5f3ff; }
-        .val-balance { color: #2563eb; font-weight: 900; background-color: #eff6ff; font-size: 15px; }
-        .val-neg { background-color: #fee2e2; color: #b91c1c; }
-        
-        .time-label { display: block; font-size: 9px; color: #94a3b8; font-weight: normal; margin-bottom: 1px; }
-        .row-icon { width: 14px; text-align: center; display: inline-block; margin-right: 2px; }
+        /* 凍結首列 (日期欄) */
+        .milk-table thead th { 
+            position: sticky; top: 0; z-index: 10; 
+            background-color: #f8fafc; 
+            border-bottom: 2px solid #94a3b8; 
+            height: 55px; 
+        }
+        /* 左上角交界處 */
+        .milk-table thead th:first-child { z-index: 30; background-color: #fff; }
+
+        /* 特殊狀態色 */
+        .bg-today { background-color: #ecfdf5 !important; } /* 今天: 綠底 */
+        .bg-today-head { background-color: #10b981 !important; color: white !important; }
+        .bg-peak { background-color: #f3e8ff !important; } /* 高峰: 紫底 */
+        .text-today { color: #059669 !important; }
+
+        /* 庫存警戒色 */
+        .stock-safe { color: #2563eb; background-color: #eff6ff; }
+        .stock-warn { color: #b45309; background-color: #fef3c7; font-weight: 900; } /* >100 黃 */
+        .stock-danger { color: #fff; background-color: #ef4444; font-weight: 900; } /* >160 紅 */
+
+        /* 數值樣式 */
+        .num-font { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+        .time-label { display: block; font-size: 9px; color: #94a3b8; margin-bottom: 2px; }
+        .row-icon { width: 18px; text-align: center; display: inline-block; margin-right: 4px; }
         .manual-dot { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background-color: #3b82f6; }
 
-        /* 突顯「今天」 */
-        .is-today { background-color: #eff6ff !important; border-left: 2px solid #2563eb !important; border-right: 2px solid #2563eb !important; }
-        .is-today-header { background-color: #2563eb !important; color: white !important; }
-        .is-today-header .sub-text { color: #bfdbfe !important; }
-        
-        /* 高峰期標記 (淡紫色) */
-        .is-peak { background-color: #f3e8ff !important; } /* Purple-100 */
-
-        /* 漢堡選單按鈕 */
-        .fab-btn {
-            position: fixed; bottom: 24px; right: 24px;
-            width: 56px; height: 56px; border-radius: 50%;
-            background-color: #2563eb; color: white;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-            display: flex; items-center; justify-center;
-            font-size: 20px; z-index: 100; cursor: pointer;
-            transition: transform 0.2s;
+        /* 漢堡選單 & 側邊欄 */
+        .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+            background: white; z-index: 50; padding: 20px;
+            transform: translateX(-100%); transition: transform 0.3s ease;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
         }
-        .fab-btn:active { transform: scale(0.9); }
+        .sidebar.open { transform: translateX(0); }
 
         /* 底部抽屜 */
-        .drawer-backdrop { position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); z-index: 150; }
+        .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 40; }
         .drawer-panel {
-            position: fixed; bottom: 0; left: 0; right: 0; background-color: white; 
-            z-index: 160; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
-            max-height: 85vh; display: flex; flex-direction: column;
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; 
+            z-index: 50; border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15); 
+            max-height: 80vh; display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
+        .drawer-panel.open { transform: translateY(0); }
 
-        /* 日曆格樣式 */
-        .cal-day { background: white; border-radius: 6px; min-height: 120px; padding: 4px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; position: relative; }
-        .cal-today { border: 2px solid #2563eb; box-shadow: 0 0 10px rgba(37,99,235,0.2); z-index: 10; }
     </style>
 </head>
-<body class="flex flex-col text-slate-800">
+<body class="text-slate-800">
 
 <div id="app" v-cloak class="h-full flex flex-col relative">
 
-    <header class="bg-white px-4 py-3 border-b border-slate-200 flex-none z-30 flex justify-between items-center shadow-sm">
-        <div>
-            <div class="flex items-baseline gap-2">
-                <div class="text-xs font-bold text-slate-400">今日結餘 ({{ todayStr }})</div>
-                <div v-if="todayEndStock < 0" class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">庫存不足</div>
+    <header class="bg-white px-4 py-2 border-b border-slate-200 flex-none z-30 flex justify-between items-center shadow-sm h-14">
+        <div class="flex items-center gap-3">
+            <button @click="sidebarOpen = true" class="w-10 h-10 flex items-center justify-center rounded-lg active:bg-slate-100 text-slate-600">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <div>
+                <div class="text-[10px] text-slate-400 font-bold leading-tight">TODAY {{ todayStr }}</div>
+                <div class="text-lg font-black text-slate-800 leading-tight num-font">
+                    {{ todayEndStock.toFixed(1) }} <span class="text-xs text-slate-400">L</span>
+                </div>
             </div>
-            <div class="text-3xl font-black text-slate-800 num-font leading-none mt-1">{{ todayEndStock.toFixed(1) }} <span class="text-sm text-slate-400">L</span></div>
         </div>
         <div class="flex gap-2">
-            <button @click="viewMode = viewMode === 'list' ? 'calendar' : 'list'" 
-                class="bg-slate-100 text-slate-600 w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-sm active:scale-95 transition">
-                <i :class="viewMode === 'list' ? 'fas fa-calendar-alt' : 'fas fa-list'"></i>
-            </button>
+            <div v-if="todayEndStock > 160" class="flex flex-col items-end">
+                <span class="text-[9px] font-bold text-red-500">紅色警戒</span>
+                <i class="fas fa-circle text-red-500 text-xs animate-pulse"></i>
+            </div>
+            <div v-else-if="todayEndStock > 100" class="flex flex-col items-end">
+                <span class="text-[9px] font-bold text-amber-500">黃色警戒</span>
+                <i class="fas fa-circle text-amber-500 text-xs"></i>
+            </div>
         </div>
     </header>
 
-    <main class="flex-1 bg-slate-50 relative overflow-hidden">
-        
-        <div v-if="viewMode === 'list'" class="table-container">
+    <main class="flex-1 bg-white relative overflow-hidden">
+        <div class="table-container">
             <table class="milk-table">
                 <thead>
                     <tr>
-                        <th class="h-14"><div class="pl-1 text-xs text-slate-400 uppercase tracking-wider">Timeline</div></th>
-                        <th v-for="(day, idx) in milkBankDays" :key="idx" class="min-w-[85px]" 
-                            :class="{'is-today-header': day.isToday, 'bg-orange-50': day.isWeekend && !day.isToday}">
+                        <th class="h-14 bg-white border-r-2 border-slate-300">
+                            <div class="text-xs text-slate-400 font-bold text-left pl-1">TIME / DATE</div>
+                        </th>
+                        <th v-for="(day, idx) in milkBankDays" :key="idx" 
+                            class="min-w-[85px]" 
+                            :class="{
+                                'bg-today-head': day.isToday, 
+                                'bg-peak': day.isPeak && !day.isToday,
+                                'bg-orange-50': day.isWeekend && !day.isToday
+                            }">
                             <div class="flex flex-col items-center justify-center">
-                                <span class="text-sm font-black" :class="day.isToday ? 'text-white' : (day.isWeekend ? 'text-red-500' : 'text-slate-700')">{{ day.weekDay }}</span>
-                                <span class="text-[10px] font-bold sub-text" :class="day.isToday ? 'text-blue-200' : 'text-slate-500'">{{ day.dateStr }}</span>
+                                <span class="text-sm font-black" :class="day.isToday ? 'text-white' : (day.isWeekend ? 'text-red-500' : 'text-slate-700')">
+                                    {{ day.weekDay }}
+                                </span>
+                                <span class="text-[10px] font-bold opacity-80" :class="day.isToday ? 'text-white' : 'text-slate-500'">
+                                    {{ day.dateStr }}
+                                </span>
                             </div>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><span class="time-label">07:00</span><i class="fas fa-cube text-slate-300 row-icon"></i> 期初</td>
+                        <td><span class="time-label">07:00</span><i class="fas fa-cube text-slate-300 row-icon"></i> 期初庫存</td>
                         <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('inventory', day)"
-                            class="editable-cell num-font relative" :class="dayClass(day)">
+                            class="editable-cell num-font relative" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
                             <span :class="day.isManual.inventory ? 'text-indigo-600 font-bold' : 'text-slate-400'">{{ day.startStock.toFixed(1) }}</span>
                         </td>
                     </tr>
                     
                     <tr>
-                        <td><span class="time-label">08:00</span><i class="fas fa-tint text-emerald-500 row-icon"></i> 晨收</td>
+                        <td><span class="time-label">08:00</span><i class="fas fa-tint text-emerald-500 row-icon"></i> 晨間收乳</td>
                         <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('harvestAM', day)"
-                            class="editable-cell val-input num-font relative" :class="dayClass(day)">
+                            class="editable-cell text-emerald-600 font-bold num-font relative" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
                             +{{ day.harvestAM }}
                             <div v-if="day.isManual.harvestAM" class="manual-dot"></div>
                         </td>
                     </tr>
 
-                    <tr class="bg-blue-50/20">
-                        <td><span class="time-label">10:00</span><i class="fas fa-users text-blue-500 row-icon"></i> 家庭</td>
+                    <tr>
+                        <td><span class="time-label">10:00</span><i class="fas fa-users text-blue-500 row-icon"></i> 家庭配送</td>
                         <td v-for="day in milkBankDays" :key="day.key" @click="openChecklist(day)"
-                            class="editable-cell text-blue-700 font-bold num-font relative" :class="dayClass(day)">
+                            class="editable-cell text-blue-700 font-bold num-font relative" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
                             <span v-if="day.deliveryHome > 0">-{{ day.deliveryHome.toFixed(1) }}</span>
                             <span v-else class="text-slate-200">-</span>
                             <div v-if="day.homeStatus.total > 0" class="absolute bottom-1 right-1 flex gap-0.5">
-                                <div v-if="day.homeStatus.pending > 0" class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
-                                <div v-if="day.homeStatus.partial > 0" class="w-1.5 h-1.5 rounded-full bg-red-400"></div>
                                 <div v-if="day.homeStatus.pending === 0" class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                <div v-else class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
                             </div>
                         </td>
                     </tr>
 
                     <tr>
-                        <td><span class="time-label">12:00</span><i class="fas fa-clipboard-list text-purple-500 row-icon"></i> 臨時</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('adhoc', day)"
-                            class="editable-cell num-font text-xs font-bold text-purple-700" :class="dayClass(day)">
-                            <span v-if="day.adhoc.total > 0">-{{ day.adhoc.total.toFixed(1) }}</span>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td><span class="time-label">13:00</span><i class="fas fa-bullhorn text-pink-500 row-icon"></i> 快閃</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('flash', day)"
-                            class="editable-cell num-font text-xs font-bold text-pink-600" :class="dayClass(day)">
-                            <span v-if="day.flash.vol > 0">-{{ day.flash.vol }}</span>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td><span class="time-label">14:00</span><i class="fas fa-blender text-amber-600 row-icon"></i> 加工</td>
+                        <td><span class="time-label">12:00</span><i class="fas fa-cookie-bite text-amber-600 row-icon"></i> 加工製作</td>
                         <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('process', day)"
-                            class="editable-cell num-font text-xs font-bold text-amber-700" :class="dayClass(day)">
+                            class="editable-cell text-amber-700 font-bold num-font text-xs" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
                             <span v-if="day.process.vol > 0">-{{ day.process.vol.toFixed(1) }}</span>
                             <span v-else class="text-slate-200">-</span>
                         </td>
                     </tr>
 
                     <tr>
-                        <td><span class="time-label">18:00</span><i class="fas fa-moon text-indigo-400 row-icon"></i> 晚收</td>
+                        <td><span class="time-label">14:00</span><i class="fas fa-bullhorn text-pink-500 row-icon"></i> 快閃活動</td>
+                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('flash', day)"
+                            class="editable-cell text-pink-600 font-bold num-font text-xs" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
+                            <span v-if="day.flash.vol > 0">-{{ day.flash.vol }}</span>
+                            <span v-else class="text-slate-200">-</span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><span class="time-label">15:00</span><i class="fas fa-clipboard-list text-purple-500 row-icon"></i> 臨時/特殊</td>
+                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('adhoc', day)"
+                            class="editable-cell text-purple-600 font-bold num-font text-xs" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
+                            <span v-if="day.adhoc.total > 0">-{{ day.adhoc.total.toFixed(1) }}</span>
+                            <span v-else class="text-slate-200">-</span>
+                        </td>
+                    </tr>
+
+                     <tr>
+                        <td><span class="time-label">16:00</span><i class="fas fa-box-open text-teal-600 row-icon"></i> 團購備貨</td>
+                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('groupBuy', day)"
+                            class="editable-cell text-teal-600 font-bold num-font text-xs" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
+                            <span v-if="day.groupBuy.vol > 0">-{{ day.groupBuy.vol.toFixed(1) }}</span>
+                            <span v-else class="text-slate-200">-</span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><span class="time-label">18:00</span><i class="fas fa-moon text-indigo-400 row-icon"></i> 晚間收乳</td>
                         <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('harvestPM', day)"
-                            class="editable-cell val-input num-font" :class="dayClass(day)">
+                            class="editable-cell text-indigo-600 font-bold num-font" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
                             +{{ day.harvestPM }}
                         </td>
                     </tr>
 
-                    <tr class="bg-purple-50/50">
+                    <tr class="bg-purple-50/30">
                         <td class="border-l-4 border-l-purple-500">
                             <span class="time-label text-purple-500 font-bold">19:00</span>
-                            <i class="fas fa-truck text-purple-600 row-icon"></i> <span class="text-purple-600 font-bold">預備明晨</span>
+                            <i class="fas fa-truck text-purple-600 row-icon"></i> 預備<span class="font-black">明晨</span>
                         </td>
                         <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('deliveryRoute', day)"
-                            class="editable-cell val-future num-font relative" :class="dayClass(day)">
+                            class="editable-cell text-purple-700 font-bold num-font relative" :class="{'bg-today': day.isToday, 'bg-peak': day.isPeak && !day.isToday}">
                             <span v-if="day.deliveryRoute > 0">-{{ day.deliveryRoute.toFixed(1) }}</span>
                             <span v-else class="text-slate-200">-</span>
                             <div v-if="day.isManual.deliveryRoute" class="manual-dot bg-purple-500"></div>
                         </td>
                     </tr>
 
-                    <tr class="h-14 border-t-2 border-slate-300 bg-slate-50 sticky bottom-0 z-20 shadow-[0_-2px_5px_rgba(0,0,0,0.05)]">
+                    <tr class="h-16 border-t-2 border-slate-300">
                         <td class="font-black text-slate-800 bg-slate-50 border-t-2 border-slate-300">
-                            <span class="time-label">22:00</span> 結餘
+                            <span class="time-label">22:00</span>
+                            本日結餘
                         </td>
                         <td v-for="day in milkBankDays" :key="day.key" 
-                            class="val-balance num-font text-base"
-                            :class="[{'val-neg': day.endStock < 0}, dayClass(day)]">
+                            class="num-font text-base border-t-2 border-slate-300"
+                            :class="getStockClass(day.endStock)">
                             {{ day.endStock.toFixed(1) }}
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-
-        <div v-else class="h-full overflow-y-auto pb-24 bg-slate-100 p-2">
-            <div class="grid grid-cols-7 gap-1 text-center mb-2 sticky top-0 bg-slate-100 z-10 pt-2">
-                <div v-for="w in ['日','一','二','三','四','五','六']" :key="w" class="text-xs font-bold text-slate-500">{{w}}</div>
-            </div>
-            <div class="grid grid-cols-7 gap-1 p-1">
-                <div v-for="n in 3" :key="'empty'+n" class="cal-day opacity-0 pointer-events-none border-none bg-transparent"></div>
-                
-                <div v-for="day in milkBankDays" :key="day.key" 
-                     @click="openDrawer('inventory', day)"
-                     class="cal-day relative"
-                     :class="{'cal-today': day.isToday, 'is-peak': day.isPeak}">
-                    
-                    <div class="flex justify-between items-start mb-1">
-                        <div>
-                            <span class="text-sm font-black" :class="day.isWeekend ? 'text-red-500' : 'text-slate-700'">{{ day.dateStr.split('/')[1] }}</span>
-                        </div>
-                        <div class="text-sm font-black text-blue-600" :class="{'text-red-600': day.endStock < 0}">
-                            {{ day.endStock.toFixed(0) }}
-                        </div>
-                    </div>
-
-                    <div class="flex-1 flex flex-col justify-end gap-0.5">
-                        <div v-if="day.deliveryRoute>0" class="flex justify-between text-[9px] items-center">
-                            <i class="fas fa-truck text-purple-400"></i>
-                            <span class="font-bold text-purple-600">{{ day.deliveryRoute.toFixed(0) }}</span>
-                        </div>
-                        <div v-if="day.deliveryHome>0" class="flex justify-between text-[9px] items-center">
-                            <i class="fas fa-users text-blue-400"></i>
-                            <span class="font-bold text-blue-600">{{ day.deliveryHome.toFixed(0) }}</span>
-                        </div>
-                        <div v-if="day.adhoc.total>0" class="flex justify-between text-[9px] items-center">
-                            <i class="fas fa-clipboard-list text-purple-400"></i>
-                            <span class="font-bold text-purple-600">{{ day.adhoc.total.toFixed(0) }}</span>
-                        </div>
-                        <div v-if="day.flash.vol>0" class="flex justify-between text-[9px] items-center">
-                            <i class="fas fa-bullhorn text-pink-400"></i>
-                            <span class="font-bold text-pink-600">{{ day.flash.vol }}</span>
-                        </div>
-                        <div v-if="day.process.vol>0" class="flex justify-between text-[9px] items-center">
-                            <i class="fas fa-blender text-amber-400"></i>
-                            <span class="font-bold text-amber-600">{{ day.process.vol.toFixed(0) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
-    <button @click="openSettings" class="fab-btn">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <transition name="fade">
-        <div v-if="settings.show" class="drawer-backdrop" @click="settings.show = false"></div>
-    </transition>
-    <div v-if="settings.show" class="drawer-panel" style="z-index: 200;">
-        <div class="p-4 border-b border-slate-100 bg-slate-50 rounded-t-2xl">
-            <h3 class="text-lg font-black text-slate-800"><i class="fas fa-cog text-slate-400 mr-2"></i>設定與高峰期</h3>
-        </div>
-        <div class="p-4 overflow-y-auto">
-            <p class="text-sm text-slate-500 mb-4">點擊下方日期，將其標記為「淡紫色高峰期」，提醒工作量。</p>
-            <div class="grid grid-cols-5 gap-2">
-                <div v-for="day in milkBankDays" :key="day.key" 
-                    @click="togglePeak(day.key)"
-                    class="p-2 rounded-lg border text-center text-xs font-bold transition-all"
-                    :class="day.isPeak ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-slate-200 text-slate-600'">
-                    {{ day.dateStr }}<br>
-                    {{ day.weekDay }}
+    <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+    <div class="sidebar flex flex-col" :class="{ 'open': sidebarOpen }">
+        <h2 class="text-xl font-black text-slate-800 mb-6">工具選單</h2>
+        
+        <div class="flex-1 space-y-6">
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">工作排程</h3>
+                <div class="space-y-2">
+                    <button @click="togglePeakMode" class="w-full flex items-center justify-between p-3 rounded-xl border transition-colors"
+                        :class="isPeakMode ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-slate-200 text-slate-700'">
+                        <div class="font-bold text-sm"><i class="fas fa-calendar-check mr-2"></i> 設定高峰日期</div>
+                        <div class="text-[10px] opacity-80">{{ isPeakMode ? '點擊日期切換' : '未啟用' }}</div>
+                    </button>
+                    <p class="text-[10px] text-slate-400">啟用後，點擊表格中的日期標題可將該日標記為「淡紫色」繁忙日。</p>
                 </div>
             </div>
+
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 mb-2 uppercase">資料庫備份</h3>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="flex gap-2 mb-2">
+                        <button @click="exportData" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-xs font-bold shadow-sm">
+                            <i class="fas fa-copy mr-1"></i> 複製資料碼
+                        </button>
+                        <button @click="showImport=true" class="flex-1 bg-white text-slate-700 border border-slate-300 py-2 rounded-lg text-xs font-bold">
+                            <i class="fas fa-file-import mr-1"></i> 匯入資料
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">
+                        系統升級前，請先「複製資料碼」並自行存檔。若更換手機或版本，請使用「匯入資料」恢復紀錄。
+                    </p>
+                </div>
+            </div>
+
+            <div v-if="showImport" class="mt-2">
+                <textarea v-model="importString" class="w-full text-[10px] font-mono p-2 border rounded h-20 bg-slate-100" placeholder="貼上資料碼..."></textarea>
+                <button @click="runImport" class="w-full bg-slate-800 text-white py-2 rounded-lg text-xs font-bold mt-1">確認覆蓋並還原</button>
+            </div>
         </div>
-        <div class="p-4 border-t border-slate-100">
-             <button @click="settings.show = false" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">關閉</button>
-        </div>
+
+        <div class="text-[10px] text-slate-300 text-center">V15.0.1 Build 20260207</div>
     </div>
 
-    <transition name="fade">
-        <div v-if="drawer.show" class="drawer-backdrop" @click="closeDrawer"></div>
-    </transition>
-    
-    <transition name="drawer">
-        <div v-if="drawer.show" class="drawer-panel flex flex-col">
-            <div class="pt-3 pb-2 px-4 border-b border-slate-100 flex-none bg-white rounded-t-2xl">
-                <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="text-xl font-black text-slate-800">{{ drawer.title }}</h3>
-                        <p class="text-xs text-slate-400 font-bold mt-1">{{ drawer.dateLabel }}</p>
-                    </div>
-                    <button @click="saveDrawer" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition">
-                        確認
-                    </button>
+    <div v-if="drawer.show" class="drawer-backdrop" @click="closeDrawer"></div>
+    <div class="drawer-panel" :class="{ 'open': drawer.show }">
+        <div class="pt-3 pb-4 px-6 border-b border-slate-100 flex-none bg-white rounded-t-2xl">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4"></div>
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">{{ drawer.title }}</h3>
+                    <p class="text-xs text-slate-400 font-bold mt-0.5">{{ drawer.dateLabel }}</p>
                 </div>
+                <button @click="saveDrawer" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition">
+                    確認儲存
+                </button>
             </div>
+        </div>
 
-            <div class="overflow-y-auto p-6 space-y-6 flex-1 bg-white">
+        <div class="overflow-y-auto p-6 flex-1 bg-white pb-10">
+            
+            <div v-if="['inventory','harvestAM','harvestPM','deliveryRoute', 'flash', 'groupBuy'].includes(drawer.type)" class="flex flex-col gap-6">
+                <div v-if="drawer.type === 'deliveryRoute'" class="bg-purple-50 text-purple-800 p-3 rounded-lg text-sm font-bold text-center">
+                    <i class="fas fa-clock mr-1"></i> 這是「明早」的配送預備量
+                </div>
                 
-                <div v-if="['inventory','harvestAM','harvestPM','deliveryRoute'].includes(drawer.type)" class="flex items-center gap-4 py-8">
-                    <button @click="adj(-1)" class="w-16 h-16 bg-slate-100 rounded-2xl text-xl font-bold text-slate-600"><i class="fas fa-minus"></i></button>
+                <div class="flex items-center gap-4">
+                    <button @click="adj(-1)" class="w-16 h-16 bg-slate-100 rounded-2xl text-xl font-bold text-slate-600 active:bg-slate-200"><i class="fas fa-minus"></i></button>
                     <div class="flex-1 text-center">
                         <input v-model.number="drawer.val" type="number" step="0.1" class="w-full text-center text-5xl font-black text-slate-800 bg-transparent focus:outline-none p-0 border-none">
                         <div class="text-xs text-slate-400 mt-2 font-bold uppercase tracking-widest">LITERS</div>
                     </div>
-                    <button @click="adj(1)" class="w-16 h-16 bg-slate-100 rounded-2xl text-xl font-bold text-slate-600"><i class="fas fa-plus"></i></button>
+                    <button @click="adj(1)" class="w-16 h-16 bg-slate-100 rounded-2xl text-xl font-bold text-slate-600 active:bg-slate-200"><i class="fas fa-plus"></i></button>
                 </div>
 
-                <div v-if="drawer.type === 'adhoc'" class="space-y-6">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-purple-50 p-4 rounded-2xl">
-                            <label class="text-xs font-bold text-purple-800 mb-2 block">大瓶 (0.95L)</label>
-                            <div class="flex items-center justify-between">
-                                <button @click="drawer.adBig = Math.max(0, drawer.adBig-1)" class="w-8 h-8 rounded-full bg-white shadow font-bold">-</button>
-                                <span class="text-2xl font-black text-purple-700">{{ drawer.adBig }}</span>
-                                <button @click="drawer.adBig++" class="w-8 h-8 rounded-full bg-white shadow font-bold">+</button>
-                            </div>
-                        </div>
-                        <div class="bg-purple-50 p-4 rounded-2xl">
-                            <label class="text-xs font-bold text-purple-800 mb-2 block">中瓶 (0.5L)</label>
-                            <div class="flex items-center justify-between">
-                                <button @click="drawer.adSmall = Math.max(0, drawer.adSmall-1)" class="w-8 h-8 rounded-full bg-white shadow font-bold">-</button>
-                                <span class="text-2xl font-black text-purple-700">{{ drawer.adSmall }}</span>
-                                <button @click="drawer.adSmall++" class="w-8 h-8 rounded-full bg-white shadow font-bold">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 mb-1 block">特殊配送 (L / kg)</label>
-                        <input v-model.number="drawer.adCustom" type="number" class="w-full bg-slate-100 p-4 rounded-xl text-xl font-bold">
-                    </div>
-                    <div class="text-center text-sm text-purple-600 font-bold">
-                        總耗用: {{ ((drawer.adBig*0.95)+(drawer.adSmall*0.5)+drawer.adCustom).toFixed(1) }} L
-                    </div>
+                <div v-if="drawer.type === 'flash' || drawer.type === 'groupBuy'" class="mt-2">
+                    <label class="text-xs font-bold text-slate-400 block mb-2">備註說明</label>
+                    <input v-model="drawer.text" type="text" placeholder="例如：老街入口、團購主..." class="w-full bg-slate-100 p-3 rounded-xl text-sm font-bold">
                 </div>
-
-                <div v-if="drawer.type === 'flash'" class="space-y-4">
-                    <label class="text-xs font-bold text-pink-500 block">快閃備貨量 (L)</label>
-                    <input v-model.number="drawer.fVol" type="number" class="w-full text-4xl font-black border-b-2 border-pink-200 py-2 focus:outline-none">
-                    <input v-model="drawer.fLoc" type="text" placeholder="地點/備註" class="w-full bg-slate-100 p-3 rounded-xl">
-                </div>
-
-                <div v-if="drawer.type === 'process'" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-amber-50 p-4 rounded-2xl text-center" @click="drawer.pSmall++">
-                            <div class="text-xs font-bold text-amber-800">小饅頭</div>
-                            <div class="text-3xl font-black text-amber-600 my-2">{{ drawer.pSmall }}</div>
-                        </div>
-                        <div class="bg-orange-50 p-4 rounded-2xl text-center" @click="drawer.pBig++">
-                            <div class="text-xs font-bold text-orange-800">大饅頭</div>
-                            <div class="text-3xl font-black text-orange-600 my-2">{{ drawer.pBig }}</div>
-                        </div>
-                    </div>
-                    <div class="text-center text-sm text-amber-600 font-bold">
-                         加工耗用: {{ ((drawer.pSmall*3.7)+(drawer.pBig*1.3)).toFixed(1) }} L
-                    </div>
-                </div>
-
-                <div v-if="drawer.type === 'checklist'" class="space-y-4">
-                    <div v-for="(item, idx) in drawer.list" :key="idx" class="flex justify-between items-center p-3 border-b border-slate-100">
-                        <div>
-                            <div class="font-bold text-slate-700">{{ item.name }}</div>
-                            <div class="text-xs text-slate-400 font-mono">{{ item.big }}大 {{ item.small }}小</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click="toggleStatus(idx, 'split')" class="w-10 h-10 rounded border" :class="item.status==='split'?'bg-red-500 text-white':'text-slate-300'">拆</button>
-                            <button @click="toggleStatus(idx, 'done')" class="w-10 h-10 rounded border" :class="item.status==='done'?'bg-blue-600 text-white':'text-slate-300'"><i class="fas fa-check"></i></button>
-                        </div>
-                    </div>
-                     <div class="bg-blue-50 p-3 rounded-xl flex justify-between items-center mt-2">
-                         <span class="text-xs font-bold text-slate-500">合計</span>
-                         <span class="text-blue-600 text-lg font-black">{{ drawer.computedTotal.toFixed(1) }} L</span>
-                    </div>
-                </div>
-
             </div>
-            <div class="h-6 bg-white w-full flex-none"></div>
+
+            <div v-if="drawer.type === 'adhoc'" class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-purple-50 p-4 rounded-2xl">
+                        <label class="text-xs font-bold text-purple-800 block mb-2">大瓶 (0.95L)</label>
+                        <div class="flex items-center justify-between">
+                            <button @click="drawer.adBig=Math.max(0,drawer.adBig-1)" class="w-8 h-8 rounded-full bg-white shadow-sm font-bold text-purple-600">-</button>
+                            <span class="text-2xl font-black text-purple-700">{{ drawer.adBig }}</span>
+                            <button @click="drawer.adBig++" class="w-8 h-8 rounded-full bg-white shadow-sm font-bold text-purple-600">+</button>
+                        </div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-2xl">
+                        <label class="text-xs font-bold text-purple-800 block mb-2">中瓶 (0.5L)</label>
+                        <div class="flex items-center justify-between">
+                            <button @click="drawer.adSmall=Math.max(0,drawer.adSmall-1)" class="w-8 h-8 rounded-full bg-white shadow-sm font-bold text-purple-600">-</button>
+                            <span class="text-2xl font-black text-purple-700">{{ drawer.adSmall }}</span>
+                            <button @click="drawer.adSmall++" class="w-8 h-8 rounded-full bg-white shadow-sm font-bold text-purple-600">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 mb-2 block">特殊規格 / 餐廳 (L)</label>
+                    <input v-model.number="drawer.adCustom" type="number" class="w-full bg-slate-100 p-3 rounded-xl text-xl font-bold text-center">
+                </div>
+                <div class="text-center">
+                    <span class="text-xs text-slate-400">總計耗用</span>
+                    <div class="text-2xl font-black text-purple-600">
+                        {{ ((drawer.adBig*0.95)+(drawer.adSmall*0.5)+drawer.adCustom).toFixed(1) }} L
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="drawer.type === 'process'" class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-amber-50 p-4 rounded-2xl text-center active:scale-95 transition" @click="drawer.pSmall++">
+                        <div class="text-xs font-bold text-amber-800">小饅頭 (3.7kg)</div>
+                        <div class="text-4xl font-black text-amber-600 my-3">{{ drawer.pSmall }}</div>
+                        <div class="text-[10px] text-amber-400">點擊 +1</div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-2xl text-center active:scale-95 transition" @click="drawer.pBig++">
+                        <div class="text-xs font-bold text-orange-800">大饅頭 (1.3kg)</div>
+                        <div class="text-4xl font-black text-orange-600 my-3">{{ drawer.pBig }}</div>
+                        <div class="text-[10px] text-orange-400">點擊 +1</div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-100 pt-4">
+                    <button @click="drawer.pSmall=0; drawer.pBig=0" class="text-sm text-red-400 underline">重置數量</button>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400">總耗用量</span>
+                        <div class="text-2xl font-black text-amber-600">
+                            {{ ((drawer.pSmall*3.7)+(drawer.pBig*1.3)).toFixed(1) }} L
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="drawer.type === 'checklist'" class="space-y-4">
+                <div v-if="drawer.list.length === 0" class="text-center py-8 bg-slate-50 rounded-xl text-slate-400 text-xs">本日無排程訂單</div>
+                
+                <div v-for="(item, idx) in drawer.list" :key="idx" class="flex justify-between items-center p-3 border-b border-slate-50">
+                    <div>
+                        <div class="font-bold text-slate-700 text-sm">{{ item.name }}</div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-1">
+                            {{ item.big>0 ? item.big+'大' : '' }} {{ item.small>0 ? item.small+'小' : '' }}
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="toggleStatus(idx, 'split')" class="w-9 h-9 rounded-lg border flex items-center justify-center font-bold text-xs transition-colors"
+                            :class="item.status==='split' ? 'bg-red-500 text-white border-red-500' : 'border-slate-200 text-slate-300'">拆</button>
+                        <button @click="toggleStatus(idx, 'done')" class="w-9 h-9 rounded-lg border flex items-center justify-center transition-colors"
+                            :class="item.status==='done' ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-300'"><i class="fas fa-check"></i></button>
+                    </div>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl flex justify-between items-center mt-4">
+                     <span class="text-xs font-bold text-slate-500">實際出貨合計</span>
+                     <span class="text-xl font-black text-blue-600">{{ drawer.computedTotal.toFixed(1) }} L</span>
+                </div>
+            </div>
+
         </div>
-    </transition>
+    </div>
 
 </div>
 
 <script>
     const { createApp, ref, computed, onMounted } = Vue;
 
-    // Data URLs
+    // Data Source
     const CSV_ROUTE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF9dZUNtfJjbPIf4_3wvrJoVIv7WxGrXKEit9V0ou25BA9L1lMCEjqykH41p3f2MZc2b02nMLJXnrw/pub?gid=216467280&single=true&output=csv';
     const CSV_HOME = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF9dZUNtfJjbPIf4_3wvrJoVIv7WxGrXKEit9V0ou25BA9L1lMCEjqykH41p3f2MZc2b02nMLJXnrw/pub?gid=59343971&single=true&output=csv';
 
     createApp({
         setup() {
+            // Core Data
             const rawRoute = ref([]); 
             const rawHome = ref([]); 
-            const savedData = ref({ peakDays: [] }); 
-            const viewMode = ref('list');
-            const settings = ref({ show: false });
-            
+            const savedData = ref({});
+            const peaks = ref([]); // Array of date strings 'YYYY-M-D'
+
+            // UI State
+            const sidebarOpen = ref(false);
+            const showImport = ref(false);
+            const importString = ref('');
+            const isPeakMode = ref(false);
+
             const drawer = ref({ 
                 show: false, type: '', title: '', dateLabel: '', key: '', 
-                val: 0, 
+                val: 0, text: '',
                 pSmall: 0, pBig: 0, 
-                adBig: 0, adSmall: 0, adCustom: 0, 
-                fVol: 0, fLoc: '',
+                adBig: 0, adSmall: 0, adCustom: 0,
                 list: [], computedTotal: 0 
             });
 
-            // Start Date
             const START_DATE = new Date('2026-02-04'); 
             const WEEK_DAYS = ['日','一','二','三','四','五','六'];
 
-            // Local Time "Today"
-            const todayDateKey = computed(() => {
-                const now = new Date();
-                return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
-            });
-
+            // Init
             onMounted(async () => {
-                const stored = localStorage.getItem('milkBankV15');
-                if(stored) savedData.value = JSON.parse(stored);
-                if(!savedData.value.peakDays) savedData.value.peakDays = []; // Init array
-
+                // Restore from persistent storage
+                const stored = localStorage.getItem('milkBank_Data_Master_V15');
+                if(stored) {
+                    const parsed = JSON.parse(stored);
+                    savedData.value = parsed.data || {};
+                    peaks.value = parsed.peaks || [];
+                }
+                
                 try {
                     const [r1, r2] = await Promise.all([fetch(CSV_ROUTE).then(x=>x.text()), fetch(CSV_HOME).then(x=>x.text())]);
                     parseRoute(r1);
                     parseHome(r2);
-                } catch(e) {}
+                } catch(e) { console.error("Net error", e); }
             });
 
+            // --- CSV Parsers (Same Logic) ---
             const parseRoute = (txt) => {
                 const rows = txt.trim().split('\n').slice(1);
                 const res = [0,0,0,0,0,0,0];
@@ -493,9 +504,14 @@
                 rawHome.value = days;
             };
 
+            // --- Main Calculation Engine ---
             const milkBankDays = computed(() => {
                 const list = [];
                 let runningStock = 0;
+                
+                // Identify Today
+                const now = new Date();
+                const todayKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
 
                 for(let i=0; i<30; i++) {
                     const dObj = new Date(START_DATE);
@@ -507,10 +523,11 @@
                     const dateKey = `${y}-${m}-${d}`;
                     const dayIdx = dObj.getDay(); 
 
-                    // V14 Logic: Route is next day's
+                    // 1. Route (Tomorrow's route prep)
                     const nextDayIdx = (dayIdx + 1) % 7;
                     let deliveryRoute = (rawRoute.value[nextDayIdx] || 0) * 0.18;
 
+                    // 2. Home (Today's)
                     let deliveryHome = 0;
                     let homeStatus = { pending:0, partial:0, done:0, total:0 };
                     const defaultList = (dayIdx >=1 && dayIdx <=5) ? (rawHome.value[dayIdx-1] || []) : [];
@@ -528,31 +545,30 @@
                         if(stat !== 'skip') deliveryHome += ((item.big*0.95) + (item.small*0.5)) * factor;
                     });
 
+                    // 3. User Data
                     const harvestAM = savedDay.harvestAM ?? 13;
                     const harvestPM = savedDay.harvestPM ?? 15;
                     if(savedDay.deliveryRoute !== undefined) deliveryRoute = savedDay.deliveryRoute;
                     
                     const flash = savedDay.flash || { vol:0, loc:'' };
-                    const process = savedDay.process || { vol:0 }; // process now simple vol
+                    const process = savedDay.process || { vol:0 };
                     const adhoc = savedDay.adhoc || { total:0 };
+                    const groupBuy = savedDay.groupBuy || { vol:0, note:'' }; // New
 
+                    // 4. Stock Calc
                     let startStock = runningStock;
                     if(i===0 && savedDay.inventory===undefined) startStock = 10;
                     if(savedDay.inventory !== undefined) startStock = savedDay.inventory;
 
-                    const endStock = startStock + harvestAM + harvestPM - deliveryHome - flash.vol - process.vol - adhoc.total - deliveryRoute;
+                    const endStock = startStock + harvestAM + harvestPM - deliveryHome - flash.vol - process.vol - adhoc.total - groupBuy.vol - deliveryRoute;
                     runningStock = endStock;
 
-                    // Peak check
-                    const isPeak = (savedData.value.peakDays || []).includes(dateKey);
-
                     list.push({
-                        key: dateKey, dateStr: `${m}/${d}`, weekDay: WEEK_DAYS[dayIdx], 
-                        isWeekend: dayIdx===0||dayIdx===6,
-                        isToday: dateKey === todayDateKey.value,
-                        isPeak,
+                        key: dateKey, dateStr: `${m}/${d}`, weekDay: WEEK_DAYS[dayIdx], isWeekend: dayIdx===0||dayIdx===6,
+                        isToday: dateKey === todayKey,
+                        isPeak: peaks.value.includes(dateKey),
                         startStock, harvestAM, harvestPM, deliveryRoute, deliveryHome,
-                        flash, process, adhoc, endStock, homeStatus, 
+                        flash, process, adhoc, groupBuy, endStock, homeStatus, 
                         rawHomeList: activeList,
                         isManual: {
                             inventory: savedDay.inventory!==undefined,
@@ -564,58 +580,78 @@
                 return list;
             });
 
-            const todayEndStock = computed(() => milkBankDays.value.find(d => d.isToday)?.endStock || 0);
-            const todayStr = computed(() => milkBankDays.value.find(d => d.isToday)?.dateStr || '');
-            
-            // Peak Settings
-            const openSettings = () => settings.value.show = true;
-            const togglePeak = (key) => {
-                if(!savedData.value.peakDays) savedData.value.peakDays = [];
-                const idx = savedData.value.peakDays.indexOf(key);
-                if(idx > -1) savedData.value.peakDays.splice(idx, 1);
-                else savedData.value.peakDays.push(key);
-                saveData();
+            const todayEndStock = computed(() => {
+                const t = milkBankDays.value.find(d => d.isToday);
+                return t ? t.endStock : (milkBankDays.value[0]?.endStock || 0);
+            });
+            const todayStr = computed(() => {
+                const t = milkBankDays.value.find(d => d.isToday);
+                return t ? t.dateStr : '';
+            });
+
+            // --- Helpers ---
+            const getStockClass = (val) => {
+                if(val < 0) return 'val-neg';
+                const redLimit = (25*4) + (30*2); // 160
+                const yellowLimit = (25*4); // 100
+                if(val > redLimit) return 'stock-danger';
+                if(val > yellowLimit) return 'stock-warn';
+                return 'stock-safe';
             };
 
-            // Drawer logic
+            // --- Drawer Logic ---
             const openDrawer = (type, day) => {
+                if(isPeakMode.value) {
+                    // Peak Mode: Toggle Peak status instead of opening drawer
+                    const idx = peaks.value.indexOf(day.key);
+                    if(idx > -1) peaks.value.splice(idx, 1);
+                    else peaks.value.push(day.key);
+                    saveData();
+                    return;
+                }
+
                 drawer.value.show = true;
                 drawer.value.type = type;
                 drawer.value.key = day.key;
                 drawer.value.title = getTitle(type);
                 drawer.value.dateLabel = `${day.dateStr} ${day.weekDay}`;
                 
-                // Reset Inputs
+                // Reset Forms
                 drawer.value.pSmall=0; drawer.value.pBig=0; 
                 drawer.value.adBig=0; drawer.value.adSmall=0; drawer.value.adCustom=0;
-                drawer.value.fVol=0; drawer.value.fLoc='';
+                drawer.value.text = '';
 
-                if(type === 'adhoc') {
-                   const ah = day.adhoc || {};
-                   drawer.value.adBig = ah.big || 0;
-                   drawer.value.adSmall = ah.small || 0;
-                   drawer.value.adCustom = ah.custom || 0;
+                if(type === 'process') {
+                    // Start fresh for process (simple adder)
+                } else if (type === 'adhoc') {
+                    const ah = day.adhoc || {};
+                    drawer.value.adBig = ah.big || 0;
+                    drawer.value.adSmall = ah.small || 0;
+                    drawer.value.adCustom = ah.custom || 0;
                 } else if (type === 'flash') {
-                   const fl = day.flash || {};
-                   drawer.value.fVol = fl.vol || 0;
-                   drawer.value.fLoc = fl.loc || '';
-                } else if (type === 'process') {
-                   // Process simpler now, just inputs to calculate vol
-                   // But if we want to "Edit", we need stored values. 
-                   // Simplified: Starts at 0, overwrites total.
+                    drawer.value.val = day.flash.vol;
+                    drawer.value.text = day.flash.loc;
+                } else if (type === 'groupBuy') {
+                    drawer.value.val = day.groupBuy.vol;
+                    drawer.value.text = day.groupBuy.note;
                 } else {
                     drawer.value.val = day[type];
                 }
             };
 
             const openChecklist = (day) => {
+                if(isPeakMode.value) return; 
                 drawer.value.show = true;
                 drawer.value.type = 'checklist';
-                drawer.value.title = '家庭號出貨';
+                drawer.value.title = '家庭號出貨點名';
                 drawer.value.key = day.key;
                 drawer.value.dateLabel = day.dateStr;
+                
                 const saved = (savedData.value[day.key] || {}).checklist || {};
-                drawer.value.list = day.rawHomeList.map(i => ({...i, status: saved[i.uuid] || 'done'}));
+                drawer.value.list = day.rawHomeList.map(i => ({
+                    ...i,
+                    status: saved[i.uuid] || 'done'
+                }));
                 recalcChecklistTotal();
             };
 
@@ -624,6 +660,7 @@
                 item.status = (item.status === status) ? 'skip' : status; 
                 recalcChecklistTotal();
             };
+
             const recalcChecklistTotal = () => {
                 drawer.value.computedTotal = drawer.value.list.reduce((acc, item) => {
                     if(item.status === 'skip') return acc;
@@ -633,17 +670,20 @@
             };
 
             const saveDrawer = () => {
-                const { key, type, val, adBig, adSmall, adCustom, pSmall, pBig, fVol, fLoc } = drawer.value;
+                const { key, type, val, text, adBig, adSmall, adCustom, pSmall, pBig } = drawer.value;
                 if(!savedData.value[key]) savedData.value[key] = {};
                 
-                if(type === 'adhoc') {
+                if(type === 'flash') {
+                    savedData.value[key].flash = { vol: val, loc: text };
+                } else if(type === 'groupBuy') {
+                    savedData.value[key].groupBuy = { vol: val, note: text };
+                } else if(type === 'adhoc') {
                     const total = (adBig*0.95) + (adSmall*0.5) + adCustom;
                     savedData.value[key].adhoc = { total, big: adBig, small: adSmall, custom: adCustom };
-                } else if(type === 'flash') {
-                    savedData.value[key].flash = { vol: fVol, loc: fLoc };
                 } else if(type === 'process') {
-                    const vol = (pSmall*3.7) + (pBig*1.3);
-                    savedData.value[key].process = { vol };
+                    // Overwrite logic for simple UX
+                    const total = (pSmall*3.7) + (pBig*1.3);
+                    savedData.value[key].process = { vol: total };
                 } else if(type === 'checklist') {
                     const map = {};
                     drawer.value.list.forEach(i => map[i.uuid] = i.status);
@@ -655,18 +695,46 @@
                 closeDrawer();
             };
 
+            // --- System ---
+            const togglePeakMode = () => isPeakMode.value = !isPeakMode.value;
+
+            const exportData = () => {
+                const dump = JSON.stringify({ data: savedData.value, peaks: peaks.value });
+                navigator.clipboard.writeText(dump).then(() => alert('資料碼已複製！請貼上到記事本保存。'));
+            };
+
+            const runImport = () => {
+                try {
+                    const parsed = JSON.parse(importString.value);
+                    if(parsed.data) {
+                        savedData.value = parsed.data;
+                        peaks.value = parsed.peaks || [];
+                        saveData();
+                        alert('還原成功！');
+                        showImport.value = false;
+                    }
+                } catch(e) { alert('格式錯誤，請檢查資料碼'); }
+            };
+
             const getTitle = (t) => ({
-                inventory:'期初庫存', harvestAM:'晨間收乳', harvestPM:'晚間收乳', 
-                deliveryRoute:'預備明晨配送', adhoc:'臨時/特殊訂單', flash:'快閃活動', process:'加工製作'
+                inventory:'期初庫存', harvestAM:'晨間收乳', harvestPM:'晚間收乳', deliveryRoute:'預備明晨配送',
+                process:'加工製作', flash:'快閃活動', adhoc:'臨時/特殊', groupBuy:'團購備貨'
             }[t] || t);
-            
-            const dayClass = (day) => ({ 'is-today': day.isToday, 'is-peak': day.isPeak && !day.isToday });
 
             const adj = (d) => drawer.value.val = parseFloat((drawer.value.val+d).toFixed(1));
             const closeDrawer = () => drawer.value.show = false;
-            const saveData = () => localStorage.setItem('milkBankV15', JSON.stringify(savedData.value));
+            
+            // Persistent Save
+            const saveData = () => {
+                const bundle = { data: savedData.value, peaks: peaks.value };
+                localStorage.setItem('milkBank_Data_Master_V15', JSON.stringify(bundle));
+            };
 
-            return { milkBankDays, todayEndStock, todayStr, drawer, settings, viewMode, openDrawer, closeDrawer, adj, saveDrawer, openChecklist, toggleStatus, openSettings, togglePeak, dayClass };
+            return { 
+                milkBankDays, todayEndStock, todayStr, sidebarOpen, showImport, importString, isPeakMode,
+                drawer, openDrawer, closeDrawer, adj, saveDrawer, openChecklist, toggleStatus,
+                togglePeakMode, exportData, runImport, getStockClass
+            };
         }
     }).mount('#app');
 </script>
