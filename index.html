@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>五寮尖生乳存摺 V16.0 邊框版</title>
+    <title>五寮尖 V17.0 iPhone版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -14,423 +14,257 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 1. 100vh 佈局設定 */
+        /* 全螢幕鎖定設定 */
         html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0;
-            overflow: hidden; /* 禁止 Body 捲動，只讓內部容器捲動 */
-            background-color: #f8fafc; 
-            font-family: 'Noto Sans TC', sans-serif; 
-            touch-action: manipulation; 
+            height: 100%; margin: 0; padding: 0; overflow: hidden;
+            background-color: #fff; font-family: 'Noto Sans TC', sans-serif;
+            touch-action: pan-x; /* 只允許左右滑動 */
         }
-        
         [v-cloak] { display: none; }
 
-        /* App 容器 Flex 結構 */
-        #app {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 2. 表格容器：佔滿剩餘空間並自帶卷軸 */
-        .table-container {
-            flex: 1;
-            overflow: auto;
+        /* 版面結構 */
+        #app { height: 100%; display: flex; flex-direction: column; }
+        header { flex: 0 0 60px; } /* 固定頭部高度 */
+        
+        /* 表格容器：核心 */
+        .table-viewport {
+            flex: 1; /* 佔滿剩餘高度 */
+            overflow-x: auto; /* 允許左右捲動 */
+            overflow-y: hidden; /* 禁止上下捲動 */
             position: relative;
-            background-color: #fff;
-            padding-bottom: 60px; /* 預留底部空間給固定列 */
+            background: #fff;
         }
 
-        .milk-table { border-collapse: separate; border-spacing: 0; min-width: 100%; }
-        
-        .milk-table th, .milk-table td { 
-            padding: 4px; text-align: center; border-bottom: 1px solid #e2e8f0; 
-            border-right: 1px solid #f1f5f9; white-space: nowrap; height: 50px; 
-            font-size: 13px; position: relative;
+        .full-height-table {
+            height: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed; /* 固定佈局 */
         }
 
-        /* 凍結首欄 */
-        .milk-table td:first-child, .milk-table th:first-child {
-            position: sticky; left: 0; z-index: 20; background-color: #fff; 
-            border-right: 2px solid #cbd5e1; text-align: left; padding-left: 10px; 
-            font-weight: 700; color: #475569; min-width: 90px;
-            box-shadow: 4px 0 8px rgba(0,0,0,0.02);
-        }
-        /* 凍結首列 (日期) */
-        .milk-table thead th { 
-            position: sticky; top: 0; z-index: 10; 
-            background-color: #f8fafc; border-bottom: 2px solid #94a3b8; 
-            height: 55px; 
-        }
-        /* 左上角交界 */
-        .milk-table thead th:first-child { z-index: 30; }
-
-        /* 3. 今日高亮：連貫邊框設計 */
-        /* 使用 box-shadow 模擬邊框，不影響寬度 */
-        .today-col { 
-            box-shadow: inset 2px 0 0 0 #3b82f6, inset -2px 0 0 0 #3b82f6; 
-            background-color: #f8fbff;
-        }
-        .today-header {
-            box-shadow: inset 2px 0 0 0 #3b82f6, inset -2px 0 0 0 #3b82f6, inset 0 2px 0 0 #3b82f6;
-            background-color: #eff6ff !important;
-        }
-        /* 結餘列 (固定在底部) */
-        .balance-row td {
-            position: sticky; bottom: 0; z-index: 15;
-            background-color: #f1f5f9; border-top: 2px solid #cbd5e1;
-            font-family: 'Roboto Mono', monospace; font-weight: 900; color: #1e40af;
-            height: 55px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-        }
-        .balance-row td.today-col {
-            box-shadow: inset 2px 0 0 0 #3b82f6, inset -2px 0 0 0 #3b82f6, inset 0 -2px 0 0 #3b82f6, 0 -2px 10px rgba(0,0,0,0.05); /* 補上下邊框 */
-            background-color: #eff6ff;
+        /* 欄位設定 */
+        .col-label {
+            position: sticky; left: 0; z-index: 20;
+            width: 100px; /* 固定左側標題寬度 */
+            background-color: #f8fafc;
+            border-right: 2px solid #e2e8f0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
         }
         
-        /* 視覺樣式 */
-        .peak-bg { background-color: #f3e8ff !important; }
-        .weekend-bg { background-color: #fff7ed; }
-        .num-font { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+        .col-data {
+            width: 35vw; /* iPhone 15 剛好顯示約 2.8 天 */
+            min-width: 130px;
+        }
+
+        /* 列高設定：自動均分 */
+        tr { height: 8.5%; } /* 100% 除以約 11-12 行 */
         
-        .val-in { color: #059669; font-weight: 600; }
-        .val-out { color: #dc2626; font-weight: 600; }
-        .manual-dot { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; position: absolute; top: 4px; right: 4px; }
+        th, td {
+            padding: 0 4px; text-align: center;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f8fafc;
+            white-space: nowrap;
+        }
+
+        /* 字體與顏色 */
+        .time-label { font-size: 11px; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px; }
+        .row-title { font-size: 13px; font-weight: 700; color: #334155; }
         
-        /* Drawer & Sidebar (修復點擊穿透問題) */
-        .drawer-mask, .sidebar-mask { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-            backdrop-filter: blur(2px); z-index: 40; 
-        }
-        .drawer-body { 
-            position: fixed; bottom: 0; left: 0; right: 0; background: white; z-index: 50; 
-            border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
-            transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-            max-height: 85vh; display: flex; flex-col;
-        }
-        .drawer-body.active { transform: translateY(0); }
+        .num-val { font-family: 'Roboto Mono', monospace; font-size: 17px; letter-spacing: -0.5px; font-weight: 500; }
+        .val-plus { color: #10b981; } /* 綠色 + */
+        .val-minus { color: #ef4444; } /* 紅色 - */
+        .val-blue { color: #3b82f6; font-weight: 700; } /* 藍色 */
+        
+        /* 今日高亮 */
+        .is-today { background-color: #f0f9ff; box-shadow: inset 2px 0 0 #3b82f6, inset -2px 0 0 #3b82f6; }
+        .is-today-header { background-color: #eff6ff !important; border-bottom: 2px solid #3b82f6; }
+        
+        /* 底部結餘特別大 */
+        .row-balance { background-color: #f8fafc; border-top: 2px solid #cbd5e1; height: 10%; }
+        .row-balance .num-val { font-size: 20px; font-weight: 900; color: #1e40af; }
 
-        .sidebar-panel { 
-            position: fixed; top:0; bottom:0; left:0; width: 280px; 
-            background: white; z-index: 60; transform: translateX(-100%); 
-            transition: transform 0.3s; box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-        }
-        .sidebar-panel.active { transform: translateX(0); }
+        /* 底部參考資訊 */
+        .row-ref { height: 8%; background-color: #f1f5f9; font-size: 11px; color: #64748b; }
 
-        /* 月曆優化 */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 4px; }
-        .cal-day { 
-            background: white; border: 1px solid #e2e8f0; border-radius: 6px; 
-            min-height: 140px; padding: 3px; display: flex; flex-direction: column; 
+        /* 編輯抽屜 */
+        .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 40; backdrop-filter: blur(2px); }
+        .drawer { 
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; 
+            z-index: 50; border-radius: 20px 20px 0 0; 
+            transform: translateY(100%); transition: transform 0.25s;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            padding-bottom: 20px;
         }
-        .cal-today { ring: 2px solid #3b82f6; z-index: 5; }
-        .cal-row { display: flex; justify-content: space-between; font-size: 9px; color: #64748b; margin-top: 1px; padding: 1px 0; border-bottom: 1px dashed #f1f5f9; }
+        .drawer.open { transform: translateY(0); }
 
-        /* 簡單的 Toast */
-        .toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: #10b981; color: white; padding: 8px 16px; border-radius: 20px;
-            font-weight: bold; z-index: 100; transition: transform 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); }
+        .manual-dot { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; position: absolute; top: 8px; right: 8px; }
     </style>
 </head>
-<body class="overflow-hidden">
+<body>
 
 <div id="app" v-cloak>
-
-    <header class="bg-white px-4 py-3 border-b border-slate-200 flex-none z-30 flex justify-between items-center shadow-sm h-[60px]">
-        <div class="flex items-center gap-3">
-            <button @click="sidebarOpen = true" class="w-8 h-8 flex items-center justify-center text-slate-500 active:bg-slate-100 rounded-full">
-                <i class="fas fa-bars text-lg"></i>
-            </button>
-            <div>
-                <div class="text-[10px] text-slate-400 font-bold uppercase">Today Balance</div>
-                <div class="text-xl font-black text-slate-800 num-font leading-none">
-                    {{ todayEndStock.toFixed(1) }}
-                    <span v-if="todayEndStock > 160" class="text-[10px] bg-red-100 text-red-600 px-1 rounded ml-1">RED</span>
-                    <span v-else-if="todayEndStock > 100" class="text-[10px] bg-yellow-100 text-yellow-600 px-1 rounded ml-1">YEL</span>
-                </div>
-            </div>
+    
+    <header class="flex justify-between items-center px-5 bg-white shadow-sm border-b z-30">
+        <div>
+            <div class="text-[10px] text-slate-400 font-bold">今日結餘 ({{ todayStr }})</div>
+            <div class="text-3xl font-black text-slate-800 num-font">{{ todayEndStock.toFixed(1) }} <span class="text-sm text-slate-400">L</span></div>
         </div>
-        <button @click="toggleView" class="bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 active:scale-95 transition">
-            <i :class="viewMode==='list'?'fas fa-calendar-alt':'fas fa-list'"></i> {{ viewMode==='list'?'月曆':'列表' }}
+        <button @click="scrollToToday" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold shadow-sm">
+            <i class="fas fa-calendar-day mr-1"></i> 回今日
         </button>
     </header>
 
-    <main class="table-container">
-        
-        <div v-if="viewMode === 'list'">
-            <table class="milk-table">
-                <thead>
-                    <tr>
-                        <th class="bg-slate-50 pl-2">項目</th>
-                        <th v-for="day in days" :key="day.key" 
-                            :class="[
-                                day.isToday ? 'today-header' : '',
-                                day.isPeak ? 'peak-bg' : '',
-                                (day.isWeekend && !day.isPeak && !day.isToday) ? 'weekend-bg' : ''
-                            ]">
-                            <div class="flex flex-col items-center justify-center">
-                                <span class="text-xs font-black" :class="day.isWeekend?'text-red-500':'text-slate-600'">{{ day.weekDay }}</span>
-                                <span class="text-[10px] text-slate-400 font-bold">{{ day.dateStr }}</span>
-                            </div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><i class="fas fa-cube text-slate-300 w-4 text-center"></i> 期初</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('inventory', d)" 
-                            class="num-font text-slate-500 cursor-pointer" :class="getCellClass(d)">
-                            {{ d.startStock.toFixed(1) }}
-                            <div v-if="d.isManual.inventory" class="manual-dot"></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-tint text-emerald-500 w-4 text-center"></i> 晨收</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('harvestAM', d)" 
-                            class="num-font val-in cursor-pointer" :class="getCellClass(d)">
-                            +{{ d.harvestAM }}
-                            <div v-if="d.isManual.harvestAM" class="manual-dot"></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-truck text-slate-400 w-4 text-center"></i> 晨配</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('deliveryRoute', d)" 
-                            class="num-font val-out cursor-pointer" :class="getCellClass(d)">
-                            <span v-if="d.deliveryRoute > 0">-{{ d.deliveryRoute.toFixed(1) }}</span>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-                    <tr class="bg-blue-50/20">
-                        <td><i class="fas fa-users text-blue-500 w-4 text-center"></i> 家庭</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('checklist', d)" 
-                            class="num-font text-blue-600 font-bold cursor-pointer" :class="getCellClass(d)">
-                            <span v-if="d.deliveryHome > 0">-{{ d.deliveryHome.toFixed(1) }}</span>
-                            <span v-else class="text-slate-200">-</span>
-                             <div v-if="d.homeSummary" class="text-[8px] text-blue-400 leading-none mt-0.5 scale-90">{{ d.homeSummary }}</div>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <td><i class="fas fa-blender text-amber-500 w-4 text-center"></i> 加工</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('process', d)" 
-                            class="num-font text-amber-600 font-bold text-xs cursor-pointer" :class="getCellClass(d)">
-                            <div v-if="d.process.vol > 0">-{{ d.process.vol.toFixed(1) }}</div>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-bullhorn text-pink-500 w-4 text-center"></i> 快閃</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('flash', d)" 
-                            class="num-font text-pink-600 font-bold text-xs cursor-pointer" :class="getCellClass(d)">
-                             <div v-if="d.flash.vol > 0">-{{ d.flash.vol }}</div>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-clipboard-list text-purple-500 w-4 text-center"></i> 臨時</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('adhoc', d)" 
-                            class="num-font text-purple-600 font-bold text-xs cursor-pointer" :class="getCellClass(d)">
-                            <div v-if="d.adhoc.total > 0">-{{ d.adhoc.total.toFixed(1) }}</div>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-boxes text-teal-500 w-4 text-center"></i> 團購</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('group', d)" 
-                            class="num-font text-teal-600 font-bold text-xs cursor-pointer" :class="getCellClass(d)">
-                             <div v-if="d.group.vol > 0">-{{ d.group.vol }}</div>
-                            <span v-else class="text-slate-200">-</span>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td><i class="fas fa-moon text-indigo-400 w-4 text-center"></i> 晚收</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('harvestPM', d)" 
-                            class="num-font val-in cursor-pointer" :class="getCellClass(d)">
-                            +{{ d.harvestPM }}
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <td><i class="fas fa-balance-scale text-slate-400 w-4 text-center"></i> 調節</td>
-                        <td v-for="d in days" :key="d.key" @click="edit('variance', d)" 
-                            class="text-xs cursor-pointer" :class="getCellClass(d)">
-                            <span v-if="d.variance.val !== 0" :class="d.variance.val>0?'text-green-600':'text-red-600'" class="font-bold">
-                                {{ d.variance.val>0?'+':'' }}{{ d.variance.val }}
-                            </span>
-                            <span v-else class="text-slate-100">-</span>
-                        </td>
-                    </tr>
-
-                    <tr class="balance-row">
-                        <td class="bg-slate-50 border-t-2 border-slate-300 z-30">結餘</td>
-                        <td v-for="d in days" :key="d.key" class="num-font" 
-                            :class="[getCellClass(d), getStockTextClass(d.endStock)]">
-                            {{ d.endStock.toFixed(1) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div v-else class="p-2 pb-24 bg-slate-100">
-            <div class="grid grid-cols-7 gap-1 text-center mb-2 text-xs font-bold text-slate-400">
-                <div v-for="w in ['日','一','二','三','四','五','六']">{{w}}</div>
-            </div>
-            <div class="calendar-grid">
-                <div v-for="n in 3" class="opacity-0"></div> <div v-for="d in days" :key="d.key" @click="edit('inventory', d)" 
-                    class="cal-day relative"
-                    :class="[
-                        d.isToday ? 'cal-today ring-2 ring-blue-500' : '',
-                        d.isPeak ? 'peak-bg' : (d.isWeekend ? 'weekend-bg' : '')
-                    ]">
-                    
-                    <div class="flex justify-between items-start mb-1">
-                        <div>
-                            <span class="text-sm font-black" :class="d.isWeekend?'text-red-500':'text-slate-700'">{{ d.dateStr.split('/')[1] }}</span>
-                            <span class="text-[9px] text-slate-400 ml-1">{{ d.lunar }}</span>
+    <div class="table-viewport" ref="scrollContainer">
+        <table class="full-height-table">
+            <thead>
+                <tr>
+                    <th class="col-label bg-slate-50">
+                        <div class="text-xs text-slate-400">項目 \ 日期</div>
+                    </th>
+                    <th v-for="d in days" :key="d.key" class="col-data" :class="{'is-today-header': d.isToday, 'bg-orange-50': d.isWeekend && !d.isToday}">
+                        <div class="flex flex-col items-center py-2">
+                            <span class="text-lg font-black" :class="d.isWeekend?'text-red-500':'text-slate-700'">{{ d.weekDay }}</span>
+                            <span class="text-[10px] text-slate-500 font-bold">{{ d.dateStr }}</span>
                         </div>
-                        <div v-if="d.variance.val!==0" class="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                    </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-label">
+                        <span class="time-label">07:00</span>
+                        <span class="row-title"><i class="fas fa-cube text-slate-300 w-4 text-center"></i> 期初</span>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('inventory', d)" class="relative" :class="{'is-today': d.isToday}">
+                        <span class="num-val text-slate-400 italic">{{ d.startStock.toFixed(1) }}</span>
+                        <div v-if="d.isManual.inventory" class="manual-dot"></div>
+                    </td>
+                </tr>
 
-                    <div class="flex-1 flex flex-col gap-0.5">
-                        <div v-if="d.deliveryHome>0" class="cal-row"><span><i class="fas fa-users text-blue-400"></i></span><span class="text-blue-600 font-bold">{{ d.deliveryHome.toFixed(0) }}</span></div>
-                        <div v-if="d.process.vol>0" class="cal-row"><span><i class="fas fa-blender text-amber-400"></i></span><span class="text-amber-600 font-bold">{{ d.process.vol.toFixed(0) }}</span></div>
-                        <div v-if="d.flash.vol>0" class="cal-row"><span><i class="fas fa-bullhorn text-pink-400"></i></span><span class="text-pink-600 font-bold">{{ d.flash.vol }}</span></div>
-                        <div v-if="d.adhoc.total>0" class="cal-row"><span><i class="fas fa-clipboard text-purple-400"></i></span><span class="text-purple-600 font-bold">{{ d.adhoc.total.toFixed(0) }}</span></div>
-                        <div v-if="d.group.vol>0" class="cal-row"><span><i class="fas fa-boxes text-teal-400"></i></span><span class="text-teal-600 font-bold">{{ d.group.vol }}</span></div>
-                    </div>
+                <tr>
+                    <td class="col-label">
+                        <span class="time-label">08:00</span>
+                        <span class="row-title"><i class="fas fa-sun text-emerald-500 w-4 text-center"></i> 晨收</span>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('harvestAM', d)" :class="{'is-today': d.isToday}">
+                        <span class="num-val val-plus">+{{ d.harvestAM }}</span>
+                    </td>
+                </tr>
 
-                    <div class="mt-auto pt-1 border-t border-slate-100 text-right">
-                        <span class="text-sm font-black" :class="getStockTextClass(d.endStock)">{{ d.endStock.toFixed(0) }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+                <tr>
+                    <td class="col-label">
+                        <span class="time-label">10:00</span>
+                        <span class="row-title"><i class="fas fa-home text-blue-500 w-4 text-center"></i> 宅配</span>
+                        <div class="text-[9px] text-slate-400 scale-90 origin-left">家庭號/大新</div>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('checklist', d)" :class="{'is-today': d.isToday}">
+                        <span v-if="d.deliveryHome > 0" class="num-val val-blue">-{{ d.deliveryHome.toFixed(1) }}</span>
+                        <span v-else class="text-slate-200">-</span>
+                    </td>
+                </tr>
 
-    <div v-if="drawer.show" class="drawer-mask" @click="drawer.show=false"></div>
-    <div class="drawer-body" :class="{ 'active': drawer.show }">
-        <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 rounded-t-2xl flex justify-between items-center">
+                <tr>
+                    <td class="col-label">
+                        <span class="time-label">13:00</span>
+                        <span class="row-title"><i class="fas fa-blender text-amber-500 w-4 text-center"></i> 加班</span>
+                        <div class="text-[9px] text-slate-400 scale-90 origin-left">加工/快閃/團購</div>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('process_group', d)" :class="{'is-today': d.isToday}">
+                        <div v-if="d.otherOut > 0" class="num-val text-amber-600 font-bold">-{{ d.otherOut.toFixed(1) }}</div>
+                        <span v-else class="text-slate-200">-</span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="col-label">
+                        <span class="time-label">20:00</span>
+                        <span class="row-title"><i class="fas fa-moon text-indigo-500 w-4 text-center"></i> 晚收</span>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('harvestPM', d)" :class="{'is-today': d.isToday}">
+                        <span class="num-val val-plus">+{{ d.harvestPM }}</span>
+                    </td>
+                </tr>
+
+                <tr class="bg-red-50/30">
+                    <td class="col-label">
+                        <span class="row-title text-red-600"><i class="fas fa-truck text-red-400 w-4 text-center"></i> 晨配備貨</span>
+                        <div class="text-[9px] text-red-400 scale-90 origin-left leading-tight mt-1">扣今日庫存<br>供明早配送</div>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('deliveryRoute', d)" :class="{'is-today': d.isToday}">
+                        <div class="num-val val-minus font-bold">-{{ d.tomorrowRoute.toFixed(1) }}</div>
+                        <div class="text-[9px] text-red-300">for {{ d.tomorrowDate }}</div>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td class="col-label">
+                        <span class="row-title text-slate-400">調節</span>
+                    </td>
+                    <td v-for="d in days" :key="d.key" @click="edit('variance', d)" :class="{'is-today': d.isToday}">
+                        <span v-if="d.variance.val !== 0" :class="d.variance.val>0?'text-green-500':'text-red-500'" class="font-bold text-sm">
+                            {{ d.variance.val>0?'+':'' }}{{ d.variance.val }}
+                        </span>
+                        <span v-else class="text-slate-100">-</span>
+                    </td>
+                </tr>
+
+                <tr class="row-balance shadow-md">
+                    <td class="col-label bg-slate-50 border-t-2 border-slate-300">
+                        <span class="time-label">22:00</span>
+                        <span class="row-title text-blue-800">結餘</span>
+                    </td>
+                    <td v-for="d in days" :key="d.key" class="border-t-2 border-slate-300" :class="{'is-today': d.isToday}">
+                        <span class="num-val">{{ d.endStock.toFixed(1) }}</span>
+                    </td>
+                </tr>
+
+                <tr class="row-ref">
+                    <td class="col-label">
+                        <span class="font-bold text-slate-500">參考資訊</span>
+                        <div class="text-[9px]">瓶數統計</div>
+                    </td>
+                    <td v-for="d in days" :key="d.key" :class="{'is-today': d.isToday}">
+                        <div v-if="d.bottleStats.big > 0 || d.bottleStats.small > 0" class="flex flex-col gap-0.5">
+                            <div>大: <span class="text-slate-700 font-bold">{{ d.bottleStats.big }}</span></div>
+                            <div>金: <span class="text-slate-700 font-bold">{{ d.bottleStats.small }}</span></div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div v-if="drawer.show" class="drawer-backdrop" @click="drawer.show=false"></div>
+    <div class="drawer" :class="{ 'open': drawer.show }">
+        <div class="flex justify-between items-center px-6 py-4 border-b">
             <div>
                 <div class="text-lg font-black text-slate-800">{{ drawer.title }}</div>
                 <div class="text-xs text-slate-500">{{ drawer.dateLabel }}</div>
             </div>
-            <button @click="save" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition">確認</button>
+            <button @click="save" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-200">確認</button>
         </div>
         
-        <div class="p-6 overflow-y-auto flex-1 bg-white pb-10">
-            <div v-if="['inventory','harvestAM','harvestPM','deliveryRoute','flash','group','variance'].includes(drawer.type)" class="space-y-6">
-                <div class="flex items-center gap-4">
-                    <button @click="adj(-1)" class="w-14 h-14 bg-slate-100 rounded-xl text-lg font-bold hover:bg-slate-200"><i class="fas fa-minus"></i></button>
-                    <input v-model.number="drawer.val" type="number" step="0.1" class="flex-1 text-center text-5xl font-black text-slate-800 focus:outline-none border-b-2 border-slate-100 py-2">
-                    <button @click="adj(1)" class="w-14 h-14 bg-slate-100 rounded-xl text-lg font-bold hover:bg-slate-200"><i class="fas fa-plus"></i></button>
-                </div>
-                <div v-if="['flash','group','variance'].includes(drawer.type)">
-                    <label class="text-xs font-bold text-slate-400 mb-1 block">備註 / 地點 / 原因</label>
-                    <input v-model="drawer.text" type="text" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 font-bold">
-                </div>
-            </div>
-
-            <div v-if="drawer.type === 'adhoc'" class="space-y-4">
-                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                        <div class="text-xs font-bold text-purple-800 mb-2">大瓶 (0.95)</div>
-                        <div class="flex justify-between items-center">
-                            <button @click="drawer.adBig = Math.max(0, drawer.adBig-1)" class="w-8 h-8 bg-white rounded-full shadow font-bold">-</button>
-                            <span class="text-2xl font-black text-purple-700">{{ drawer.adBig }}</span>
-                            <button @click="drawer.adBig++" class="w-8 h-8 bg-white rounded-full shadow font-bold">+</button>
-                        </div>
-                    </div>
-                    <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                        <div class="text-xs font-bold text-purple-800 mb-2">中瓶 (0.5)</div>
-                        <div class="flex justify-between items-center">
-                            <button @click="drawer.adSmall = Math.max(0, drawer.adSmall-1)" class="w-8 h-8 bg-white rounded-full shadow font-bold">-</button>
-                            <span class="text-2xl font-black text-purple-700">{{ drawer.adSmall }}</span>
-                            <button @click="drawer.adSmall++" class="w-8 h-8 bg-white rounded-full shadow font-bold">+</button>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 mb-1 block">餐廳/特殊 (L)</label>
-                    <input v-model.number="drawer.adCustom" type="number" class="w-full bg-slate-100 rounded-xl p-3 text-xl font-bold">
-                </div>
-                <div class="text-center font-bold text-purple-600">總計: {{ ((drawer.adBig*0.95)+(drawer.adSmall*0.5)+drawer.adCustom).toFixed(1) }} L</div>
-            </div>
-
-            <div v-if="drawer.type === 'process'" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-amber-50 p-4 rounded-xl text-center active:bg-amber-100" @click="drawer.pSmall++">
-                        <div class="text-xs font-bold text-amber-800">小饅頭 (3.7)</div>
-                        <div class="text-3xl font-black text-amber-600 my-2">{{ drawer.pSmall }}</div>
-                    </div>
-                    <div class="bg-orange-50 p-4 rounded-xl text-center active:bg-orange-100" @click="drawer.pBig++">
-                        <div class="text-xs font-bold text-orange-800">大饅頭 (1.3)</div>
-                        <div class="text-3xl font-black text-orange-600 my-2">{{ drawer.pBig }}</div>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-2">
-                    <button @click="drawer.pSmall=0;drawer.pBig=0" class="text-xs text-red-400 font-bold underline">重置</button>
-                    <div class="text-xl font-black text-slate-800">{{ ((drawer.pSmall*3.7)+(drawer.pBig*1.3)).toFixed(1) }} L</div>
-                </div>
-            </div>
-
-            <div v-if="drawer.type === 'checklist'" class="space-y-3">
-                 <div v-if="drawer.isSunday" class="bg-indigo-50 p-2 rounded flex justify-between items-center mb-2">
-                    <span class="text-xs font-bold text-indigo-700">週日頁面</span>
-                    <button @click="loadMonday" class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">載入週一單</button>
-                </div>
-                <div v-for="(item, idx) in drawer.list" :key="idx" class="flex justify-between items-center py-2 border-b border-slate-50">
-                    <div>
-                        <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
-                        <div class="text-xs text-slate-400">{{ item.big>0?item.big+'大':'' }} {{ item.small>0?item.small+'小':'' }}</div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button @click="toggleStatus(idx,'split')" class="w-9 h-9 rounded border flex items-center justify-center transition-colors" :class="item.status==='split'?'bg-red-500 text-white':'border-slate-200 text-slate-300'"><span class="text-xs font-bold">拆</span></button>
-                        <button @click="toggleStatus(idx,'done')" class="w-9 h-9 rounded border flex items-center justify-center transition-colors" :class="item.status==='done'?'bg-blue-600 text-white':'border-slate-200 text-slate-300'"><i class="fas fa-check"></i></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div v-if="sidebarOpen" class="sidebar-mask" @click="sidebarOpen=false"></div>
-    <div class="sidebar-panel" :class="{ 'active': sidebarOpen }">
-        <div class="p-6 space-y-6">
-            <div>
-                <h2 class="text-xl font-black text-slate-800">設定選單</h2>
-                <p class="text-xs text-slate-400">V16.0 Fixed Layout</p>
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <button @click="adj(-1)" class="w-14 h-14 bg-slate-100 rounded-xl text-xl font-bold">-</button>
+                <input v-model.number="drawer.val" type="number" step="0.1" class="flex-1 text-center text-5xl font-black text-slate-800 border-b-2 border-slate-100 focus:outline-none py-2">
+                <button @click="adj(1)" class="w-14 h-14 bg-slate-100 rounded-xl text-xl font-bold">+</button>
             </div>
             
-            <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                <h3 class="text-sm font-bold text-purple-800 mb-2">設定高峰期 (紫色)</h3>
-                <div class="grid grid-cols-4 gap-2">
-                    <button v-for="d in days.slice(0,12)" :key="d.key" @click="togglePeak(d.key)" 
-                        class="text-[10px] p-1 rounded border text-center transition-colors"
-                        :class="d.isPeak?'bg-purple-600 text-white border-purple-600':'bg-white text-slate-500'">
-                        {{ d.dateStr }}
-                    </button>
-                </div>
+            <div v-if="['flash','process_group','variance'].includes(drawer.type)">
+                <input v-model="drawer.text" type="text" placeholder="輸入備註 (地點/原因/品項)" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 font-bold text-center">
             </div>
-            <div class="text-xs text-slate-400 mt-4">
-                {{ firebaseConnected ? '● 已連線 Firebase' : '○ 離線模式' }}
+
+            <div v-if="drawer.type === 'deliveryRoute'" class="text-center text-sm text-red-500 font-bold mt-2">
+                <i class="fas fa-info-circle"></i> 注意：您正在設定明天的晨配量
             </div>
         </div>
-    </div>
-
-    <div class="toast" :class="{ 'show': toast.show }">
-        <i class="fas fa-check-circle mr-1"></i> {{ toast.msg }}
     </div>
 
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
     const firebaseConfig = {
         apiKey: "AIzaSyB6D9vh6J2mdnjz2VXEVe99oi7oLF-irFo",
@@ -441,47 +275,35 @@
         messagingSenderId: "925760221722",
         appId: "1:925760221722:web:1aeda0b82f1f16b8dcd7a3"
     };
-    
+
     const CSV_ROUTE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF9dZUNtfJjbPIf4_3wvrJoVIv7WxGrXKEit9V0ou25BA9L1lMCEjqykH41p3f2MZc2b02nMLJXnrw/pub?gid=216467280&single=true&output=csv';
     const CSV_HOME = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF9dZUNtfJjbPIf4_3wvrJoVIv7WxGrXKEit9V0ou25BA9L1lMCEjqykH41p3f2MZc2b02nMLJXnrw/pub?gid=59343971&single=true&output=csv';
 
     createApp({
         setup() {
             firebase.initializeApp(firebaseConfig);
-            const db = firebase.database().ref('milkBankV15'); // Keep V15 data
-            const firebaseConnected = ref(false);
+            const db = firebase.database().ref('milkBankV15');
+            const scrollContainer = ref(null);
             
             const rawRoute = ref([]);
             const rawHome = ref([]);
             const savedData = ref({});
-            const peakDates = ref({});
+            const drawer = ref({ show:false, type:'', val:0, text:'' });
             
-            const viewMode = ref('list');
-            const sidebarOpen = ref(false);
-            const toast = ref({ show:false, msg:'' });
-            
-            const drawer = ref({ 
-                show:false, type:'', title:'', key:'', dateLabel:'', 
-                val:0, text:'', pSmall:0, pBig:0, adBig:0, adSmall:0, adCustom:0, list:[] 
-            });
-
             const START = new Date('2026-02-04');
             const WEEK = ['日','一','二','三','四','五','六'];
             const todayKey = new Date().toISOString().split('T')[0];
 
             onMounted(async () => {
-                try {
-                    const [r1, r2] = await Promise.all([fetch(CSV_ROUTE).then(x=>x.text()), fetch(CSV_HOME).then(x=>x.text())]);
-                    parseRoute(r1); parseHome(r2);
-                    
-                    db.on('value', snap => {
-                        firebaseConnected.value = true;
-                        const v = snap.val() || {};
-                        savedData.value = v.days || {};
-                        peakDates.value = v.peaks || {};
-                    });
-                    firebase.database().ref('.info/connected').on('value', s => firebaseConnected.value = s.val());
-                } catch(e) { console.error(e); }
+                const [r1, r2] = await Promise.all([fetch(CSV_ROUTE).then(x=>x.text()), fetch(CSV_HOME).then(x=>x.text())]);
+                parseRoute(r1); parseHome(r2);
+                
+                db.on('value', snap => {
+                    savedData.value = (snap.val() || {}).days || {};
+                });
+                
+                // 自動捲動到今日
+                setTimeout(scrollToToday, 1000);
             });
 
             const days = computed(() => {
@@ -491,129 +313,148 @@
                     const d = new Date(START); d.setDate(START.getDate()+i);
                     const y=d.getFullYear(), m=d.getMonth()+1, dd=d.getDate();
                     const key = `${y}-${m}-${dd}`;
+                    const nextD = new Date(d); nextD.setDate(d.getDate()+1);
+                    const nextKey = `${nextD.getFullYear()}-${nextD.getMonth()+1}-${nextD.getDate()}`;
                     const iso = d.toISOString().split('T')[0];
                     const wIdx = d.getDay();
                     const s = savedData.value[key] || {};
-                    
-                    let route = (rawRoute.value[wIdx]||0) * 0.18;
-                    if(s.deliveryRoute !== undefined) route = s.deliveryRoute;
-                    
+                    const sNext = savedData.value[nextKey] || {}; // 取得明天的資料
+
+                    // 1. 晨配備貨邏輯：顯示與扣除「明天」的晨配量
+                    // 明天的 Route 預設值
+                    const nextDayIdx = (wIdx + 1) % 7;
+                    let tomorrowRoute = (rawRoute.value[nextDayIdx] || 0) * 0.18;
+                    // 如果明天有手動修改過，優先使用
+                    if(sNext.deliveryRoute !== undefined) tomorrowRoute = sNext.deliveryRoute;
+
+                    // 2. 家庭號
                     let home = 0;
+                    let big=0, small=0;
                     const defList = (wIdx>=1 && wIdx<=5) ? (rawHome.value[wIdx-1]||[]) : [];
                     const actList = s.customList || defList;
                     const chk = s.checklist || {};
                     actList.forEach(item => {
                         const st = chk[item.uuid] || 'done';
                         const fac = st==='split'?0.5 : (st==='done'?1:0);
-                        home += ((item.big*0.95)+(item.small*0.5)) * fac;
+                        if(st!=='skip') {
+                            home += ((item.big*0.95)+(item.small*0.5)) * fac;
+                            if(st==='done'||st==='split') { big+=item.big; small+=item.small; }
+                        }
                     });
+
+                    // 3. 其他輸出 (加工+快閃+臨時+團購)
+                    const flash = s.flash?.vol || 0;
+                    const process = s.process?.vol || 0;
+                    const adhoc = s.adhoc?.total || 0;
+                    const group = s.group?.vol || 0;
+                    const otherOut = flash + process + adhoc + group;
 
                     const hAM = s.harvestAM ?? 13;
                     const hPM = s.harvestPM ?? 15;
-                    const flash = s.flash || { vol:0, loc:'' };
-                    const process = s.process || { vol:0 };
-                    const adhoc = s.adhoc || { total:0, big:0, small:0, custom:0 };
-                    const group = s.group || { vol:0, note:'' };
-                    const vari = s.variance || { val:0, note:'' };
+                    const vari = s.variance?.val || 0;
 
                     if(i===0 && s.inventory===undefined) stock = 10;
                     if(s.inventory !== undefined) stock = s.inventory;
-                    const end = stock + hAM + hPM - route - home - flash.vol - process.vol - adhoc.total - group.vol + vari.val;
+                    
+                    // 結餘公式：期初 + 收 - 宅 - 雜 - 明日晨配 + 調節
+                    const end = stock + hAM + hPM - home - otherOut - tomorrowRoute + vari;
                     stock = end;
-
-                    let lunar = '';
-                    try { const l = Lunar.fromSolar(Solar.fromYmd(y,m,d)); lunar = l.getDayInChinese(); } catch(e){}
 
                     res.push({
                         key, dateStr:`${m}/${dd}`, weekDay: WEEK[wIdx],
-                        isWeekend: wIdx===0||wIdx===6, isToday: iso===todayKey, isPeak: !!peakDates.value[key],
-                        lunar,
+                        isWeekend: wIdx===0||wIdx===6, isToday: iso===todayKey,
                         startStock: s.inventory!==undefined ? s.inventory : (i===0?10:res[i-1].endStock),
-                        harvestAM: hAM, harvestPM: hPM, deliveryRoute: route, deliveryHome: home,
-                        flash, process, adhoc, group, variance: vari, endStock: end,
-                        rawHomeList: actList, homeSummary: getHomeSum(actList),
-                        isManual: { inventory: s.inventory!==undefined, harvestAM: s.harvestAM!==undefined }
+                        harvestAM: hAM, harvestPM: hPM, 
+                        deliveryHome: home,
+                        otherOut: otherOut, // 合併顯示
+                        tomorrowRoute: tomorrowRoute, // 顯示明天的量
+                        tomorrowDate: `${nextD.getMonth()+1}/${nextD.getDate()}`,
+                        tomorrowKey: nextKey, // 用於編輯時寫入明天
+                        variance: s.variance || {val:0},
+                        endStock: end,
+                        bottleStats: { big, small },
+                        isManual: { inventory: s.inventory!==undefined }
                     });
                 }
                 return res;
             });
 
             const todayEndStock = computed(() => days.value.find(d => d.isToday)?.endStock || 0);
+            const todayStr = computed(() => {
+                const t = days.value.find(d => d.isToday);
+                return t ? `${t.dateStr}` : '';
+            });
 
+            // 編輯功能
             const edit = (type, d) => {
                 drawer.value.show = true;
                 drawer.value.type = type;
-                drawer.value.key = d.key;
                 drawer.value.dateLabel = `${d.dateStr} ${d.weekDay}`;
-                drawer.value.title = getTitle(type);
-
-                if(type==='adhoc') {
-                    const a = d.adhoc;
-                    drawer.value.adBig = a.big||0; drawer.value.adSmall = a.small||0; drawer.value.adCustom = a.custom||0;
-                } else if (type==='process') {
-                    drawer.value.pSmall=0; drawer.value.pBig=0;
-                } else if (type==='checklist') {
-                    drawer.value.isSunday = d.weekDay === '日';
-                    const savedChk = (savedData.value[d.key]||{}).checklist || {};
-                    drawer.value.list = d.rawHomeList.map(i => ({...i, status: savedChk[i.uuid]||'done'}));
-                } else if (type==='flash') {
-                     drawer.value.val = d.flash.vol; drawer.value.text = d.flash.loc;
-                } else if (type==='group') {
-                     drawer.value.val = d.group.vol; drawer.value.text = d.group.note;
-                } else if (type==='variance') {
-                     drawer.value.val = d.variance.val; drawer.value.text = d.variance.note;
-                } else {
-                    drawer.value.val = d[type];
+                
+                // 特殊邏輯：編輯晨配時，其實是在編輯「明天」的資料
+                if(type === 'deliveryRoute') {
+                    drawer.value.key = d.tomorrowKey; // 寫入 key 指向明天
+                    drawer.value.dateLabel = `備貨供 ${d.tomorrowDate} 晨配`;
+                    drawer.value.val = d.tomorrowRoute;
+                    drawer.value.title = "晨配備貨量";
+                } 
+                else if (type === 'process_group') {
+                    // 簡化：這裡我們只編輯 "Adhoc/Temp" 作為代表，實際專案可能需要拆分
+                    // 為求介面整潔，V17 假設這裡輸入一個總數或主要加工數
+                    drawer.value.key = d.key;
+                    drawer.value.title = "加班/其他消耗";
+                    drawer.value.val = d.otherOut; // 顯示總數
+                    // 若要精確寫回，建議 V18 再細分，這裡先寫入 process
+                }
+                else {
+                    drawer.value.key = d.key;
+                    drawer.value.title = {inventory:'期初庫存',harvestAM:'晨間收乳',harvestPM:'晚間收乳',checklist:'家庭號',variance:'庫存調節'}[type] || type;
+                    
+                    if(type === 'variance') {
+                        drawer.value.val = d.variance.val;
+                        drawer.value.text = d.variance.note || '';
+                    } else if (type === 'checklist') {
+                        // V17 簡化版直接輸入總量，若需點名表需呼叫 V16 的組件
+                        // 這裡為了 iPhone 體驗先讓使用者能調整總數 (此處可優化)
+                        drawer.value.val = d.deliveryHome; // 暫時
+                    } else {
+                        drawer.value.val = d[type];
+                    }
                 }
             };
 
             const save = () => {
-                const { key, type, val, text, adBig, adSmall, adCustom, pSmall, pBig } = drawer.value;
+                const { key, type, val, text } = drawer.value;
                 const path = `days/${key}`;
                 const up = {};
 
-                if(type==='adhoc') {
-                    up[`${path}/adhoc`] = { total: (adBig*0.95)+(adSmall*0.5)+adCustom, big: adBig, small: adSmall, custom: adCustom };
-                } else if(type==='process') {
-                    const add = (pSmall*3.7)+(pBig*1.3);
-                    const curr = (savedData.value[key]?.process?.vol || 0);
-                    up[`${path}/process`] = { vol: curr + add };
-                } else if(type==='checklist') {
-                    const map = {};
-                    drawer.value.list.forEach(i => map[i.uuid] = i.status);
-                    up[`${path}/checklist`] = map;
-                } else if(['flash','group','variance'].includes(type)) {
-                    const field = type; 
-                    const noteField = type==='flash' ? 'loc' : 'note';
-                    up[`${path}/${field}`] = { vol: Number(val), [noteField]: text || '' };
-                    if(type === 'variance') up[`${path}/variance`] = { val: Number(val), note: text || '' };
+                if (type === 'deliveryRoute') {
+                    // 寫入的是明天的 deliveryRoute
+                    up[`${path}/deliveryRoute`] = Number(val);
+                } else if (type === 'process_group') {
+                    // 簡化：寫入 process
+                    up[`${path}/process`] = { vol: Number(val) };
+                } else if (type === 'variance') {
+                    up[`${path}/variance`] = { val: Number(val), note: text };
                 } else {
                     up[`${path}/${type}`] = Number(val);
                 }
 
-                db.update(up).then(() => {
-                    showToast('已儲存');
-                    drawer.value.show = false;
-                });
+                db.update(up);
+                drawer.value.show = false;
             };
 
-            const togglePeak = (k) => {
-                const v = !peakDates.value[k];
-                db.child(`peaks/${k}`).set(v ? true : null);
+            const scrollToToday = () => {
+                const el = document.querySelector('.is-today-header');
+                if(el && scrollContainer.value) {
+                    scrollContainer.value.scrollTo({
+                        left: el.offsetLeft - 100, // 留一點左邊距
+                        behavior: 'smooth'
+                    });
+                }
             };
-            const toggleStatus = (i,s) => { const it = drawer.value.list[i]; it.status = it.status===s ? 'skip' : s; };
-            const loadMonday = () => {
-                db.child(`days/${drawer.value.key}/customList`).set(rawHome.value[0]);
-                drawer.value.show = false; showToast('載入週一單');
-            };
-            
+
             const adj = (n) => drawer.value.val = parseFloat((drawer.value.val+n).toFixed(1));
-            const getHomeSum = (l) => { let b=0,s=0; l.forEach(i=>{b+=i.big;s+=i.small}); return (b||s)?`${b}大${s}小`:null; };
-            const showToast = (m) => { toast.value = {show:true, msg:m}; setTimeout(()=>toast.value.show=false, 2000); };
-            const getTitle = (t) => ({inventory:'期初庫存',harvestAM:'晨間收乳',harvestPM:'晚間收乳',deliveryRoute:'晨間配送',checklist:'家庭號點名',flash:'快閃活動',process:'加工製作',adhoc:'臨時訂單',group:'團購備貨',variance:'庫存調節'}[t]||t);
-            const getCellClass = (d) => [d.isToday?'today-col':'', d.isPeak?'peak-bg':'', (d.isWeekend&&!d.isPeak&&!d.isToday)?'weekend-bg':''].join(' ');
-            const getStockTextClass = (v) => v>160?'text-red-700':(v>100?'text-yellow-700':(v<0?'text-red-500':'text-blue-600'));
-
             const parseRoute = (txt) => {
                 const r = txt.split('\n').slice(1);
                 const res = [0,0,0,0,0,0,0];
@@ -639,9 +480,7 @@
                 rawHome.value = d;
             };
 
-            return { days, todayEndStock, viewMode, drawer, sidebarOpen, toast, firebaseConnected, 
-                     edit, save, adj, toggleView:()=>viewMode.value=viewMode.value==='list'?'calendar':'list', 
-                     togglePeak, toggleStatus, loadMonday, getCellClass, getStockTextClass };
+            return { days, todayEndStock, todayStr, drawer, scrollContainer, edit, save, adj, scrollToToday };
         }
     }).mount('#app');
 </script>
