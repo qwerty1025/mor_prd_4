@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>五寮尖生乳存摺 V14.0 雲端戰情版</title>
+    <title>五寮尖生乳存摺 V15.0 總監修訂版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -14,447 +14,357 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 核心設定：禁止雙擊放大、彈性捲動 */
-        body { 
-            background-color: #f1f5f9; 
-            font-family: 'Noto Sans TC', sans-serif; 
-            touch-action: manipulation; 
-            overscroll-behavior-y: none;
-        }
+        body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; touch-action: manipulation; overscroll-behavior-y: none; }
         [v-cloak] { display: none; }
-        
-        /* 表格結構優化 - 解決標題跑位問題 */
-        .table-container {
-            height: calc(100vh - 120px); /* 扣除 Header 高度 */
-            overflow: auto;
-            position: relative;
-        }
-        .milk-table { border-collapse: separate; border-spacing: 0; min-width: 100%; }
-        
-        /* 儲存格樣式 */
-        .milk-table th, .milk-table td { 
-            padding: 4px; text-align: center; 
-            border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; 
-            white-space: nowrap; height: 48px; position: relative;
-        }
 
-        /* 凍結首欄 (左側項目) */
+        /* 表格固定 */
+        .table-view { height: calc(100vh - 110px); overflow: auto; position: relative; }
+        .milk-table { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+        .milk-table th, .milk-table td { 
+            padding: 4px; text-align: center; border-bottom: 1px solid #e2e8f0; 
+            border-right: 1px solid #f1f5f9; white-space: nowrap; height: 46px; 
+            font-size: 13px; position: relative;
+        }
+        /* 凍結首欄 */
         .milk-table td:first-child, .milk-table th:first-child {
-            position: sticky; left: 0; z-index: 20;
-            background-color: #fff; border-right: 2px solid #cbd5e1;
-            text-align: left; padding-left: 10px; color: #475569; 
-            font-size: 12px; font-weight: 700; min-width: 90px;
+            position: sticky; left: 0; z-index: 20; background-color: #fff; 
+            border-right: 2px solid #cbd5e1; text-align: left; padding-left: 10px; 
+            font-weight: 700; color: #475569; min-width: 85px;
             box-shadow: 2px 0 5px rgba(0,0,0,0.05);
         }
+        /* 凍結首列 */
+        .milk-table thead th { position: sticky; top: 0; z-index: 10; background-color: #f8fafc; border-bottom: 2px solid #94a3b8; height: 50px; }
+        .milk-table thead th:first-child { z-index: 30; }
+
+        /* 狀態色 */
+        .peak-bg { background-color: #f3e8ff !important; } /* 紫色高峰 */
+        .today-bg { background-color: #eff6ff !important; box-shadow: inset 0 0 0 2px #3b82f6; }
+        .weekend-bg { background-color: #fff7ed; }
         
-        /* 凍結首列 (日期) */
-        .milk-table thead th { 
-            position: sticky; top: 0; z-index: 10; 
-            background-color: #f8fafc; border-bottom: 2px solid #94a3b8; 
-            height: 55px; 
-        }
-        /* 左上角交界處 */
-        .milk-table thead th:first-child { z-index: 30; background-color: #f8fafc; }
-
-        /* 特殊日期標記 */
-        .peak-column { background-color: #f3e8ff !important; } /* 淡紫色高峰期 */
-        .today-column { box-shadow: inset 0 0 0 2px #3b82f6; background-color: #eff6ff; } /* 今日高亮 */
-
-        /* 數值顯示 */
-        .num-font { font-family: 'Roboto Mono', monospace; font-size: 14px; letter-spacing: -0.5px; }
-        .val-input { color: #059669; font-weight: 600; } 
-        .val-deduct { color: #dc2626; font-weight: 600; }
-        .manual-dot { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background-color: #3b82f6; }
-
-        /* 庫存警戒色 */
-        .alert-yellow { background-color: #fef9c3 !important; color: #854d0e; } /* > 100 */
-        .alert-red { background-color: #fee2e2 !important; color: #991b1b; } /* > 160 */
-        .val-balance { background-color: #eff6ff; color: #1e40af; font-weight: 900; font-size: 15px; }
-
-        /* 月曆卡片 */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 4px; }
-        .cal-day { 
-            background: white; border-radius: 6px; min-height: 130px; padding: 4px; 
-            display: flex; flex-direction: column; border: 1px solid #e2e8f0; position: relative;
-        }
-        .cal-row { display: flex; justify-content: space-between; font-size: 10px; margin-top: 1px; color: #64748b; }
+        .num-font { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+        .val-in { color: #059669; font-weight: 600; }
+        .val-out { color: #dc2626; font-weight: 600; }
+        .val-warn { background-color: #fef9c3; color: #854d0e; }
+        .val-danger { background-color: #fee2e2; color: #991b1b; }
+        .val-balance { background-color: #f1f5f9; color: #0f172a; font-weight: 900; font-size: 15px; }
         
-        /* 底部抽屜 */
-        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 40; }
-        .drawer { 
+        .manual-dot { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; position: absolute; top: 4px; right: 4px; }
+
+        /* 日曆格 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 4px; }
+        .cal-day { background: white; border: 1px solid #e2e8f0; border-radius: 6px; min-height: 140px; padding: 3px; display: flex; flex-direction: column; }
+        .cal-row { display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #64748b; margin-top: 1px; padding: 1px 0; border-bottom: 1px dashed #f1f5f9; }
+        
+        /* Drawer */
+        .drawer-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 40; }
+        .drawer-body { 
             position: fixed; bottom: 0; left: 0; right: 0; background: white; z-index: 50; 
-            border-radius: 20px 20px 0 0; max-height: 85vh; display: flex; flex-direction: column;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.3s ease-out;
+            border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
+            transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; flex-direction: column; max-height: 85vh;
         }
-        .drawer.open { transform: translateY(0); }
+        .drawer-body.active { transform: translateY(0); }
 
-        /* 漢堡選單 */
-        .sidebar {
-            position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: white; z-index: 60;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1); transform: translateX(-100%); transition: transform 0.3s;
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #10b981; color: white; padding: 8px 16px; rounded-full; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.3); z-index: 100; transition: transform 0.3s; border-radius: 20px;
+            display: flex; items-center; gap: 8px;
         }
-        .sidebar.open { transform: translateX(0); }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* Sidebar */
+        .sidebar { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+        .sidebar-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s; pointer-events: auto; }
+        .sidebar-panel { position: absolute; top:0; bottom:0; left:0; width: 280px; background: white; transform: translateX(-100%); transition: transform 0.3s; pointer-events: auto; }
+        .sidebar.open .sidebar-bg { opacity: 1; }
+        .sidebar.open .sidebar-panel { transform: translateX(0); }
     </style>
 </head>
-<body class="h-screen overflow-hidden flex flex-col text-slate-800">
+<body class="h-screen flex flex-col">
 
 <div id="app" v-cloak class="h-full flex flex-col relative">
 
+    <div class="toast" :class="{ 'show': toast.show }">
+        <i class="fas fa-check-circle"></i> {{ toast.msg }}
+    </div>
+
     <header class="bg-white px-4 py-3 border-b border-slate-200 flex-none z-30 flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-3">
-            <button @click="sidebarOpen = true" class="text-slate-500 text-xl w-8 h-8 flex items-center justify-center active:bg-slate-100 rounded-full">
-                <i class="fas fa-bars"></i>
+            <button @click="sidebarOpen = true" class="w-8 h-8 flex items-center justify-center text-slate-500 active:bg-slate-100 rounded-full">
+                <i class="fas fa-bars text-lg"></i>
             </button>
             <div>
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Today Balance</div>
-                <div class="text-2xl font-black text-slate-800 num-font leading-none flex items-baseline gap-2">
-                    {{ todayEndStock.toFixed(1) }} 
-                    <span v-if="todayEndStock > 160" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">紅戒</span>
-                    <span v-else-if="todayEndStock > 100" class="text-[10px] bg-yellow-100 text-yellow-600 px-1 rounded">黃戒</span>
+                <div class="text-[10px] text-slate-400 font-bold uppercase">今日庫存 ({{ todayStr }})</div>
+                <div class="text-2xl font-black text-slate-800 num-font leading-none">
+                    {{ todayEndStock.toFixed(1) }}
+                    <span v-if="todayEndStock > 160" class="text-[10px] align-middle bg-red-100 text-red-600 px-1 rounded ml-1">高</span>
+                    <span v-else-if="todayEndStock > 100" class="text-[10px] align-middle bg-yellow-100 text-yellow-600 px-1 rounded ml-1">警</span>
                 </div>
             </div>
         </div>
-        <button @click="viewMode = viewMode === 'list' ? 'calendar' : 'list'" 
-            class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1 active:scale-95 transition">
-            <i :class="viewMode === 'list' ? 'fas fa-calendar-alt' : 'fas fa-list'"></i>
-            {{ viewMode === 'list' ? '月曆' : '列表' }}
+        <button @click="toggleView" class="bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-1 active:scale-95 transition">
+            <i :class="viewMode==='list'?'fas fa-calendar-alt':'fas fa-list'"></i> {{ viewMode==='list'?'月曆':'列表' }}
         </button>
     </header>
 
-    <div v-if="sidebarOpen" class="fixed inset-0 bg-slate-900/50 z-50 backdrop-blur-sm" @click="sidebarOpen=false"></div>
-    <div class="sidebar flex flex-col" :class="{ 'open': sidebarOpen }">
-        <div class="p-6 bg-slate-800 text-white">
-            <h2 class="text-xl font-black mb-1">五寮尖生乳存摺</h2>
-            <p class="text-xs text-slate-400">V14.0 Cloud Edition</p>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 space-y-2">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">工具箱</div>
-            <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold text-purple-800"><i class="fas fa-highlighter mr-2"></i>高峰期標記</span>
-                </div>
-                <p class="text-xs text-purple-600 mb-3">點擊下方日期，將其標記為紫色背景(忙碌日)。</p>
-                <div class="grid grid-cols-5 gap-2">
-                    <button v-for="d in milkBankDays.slice(0,10)" :key="d.key" 
-                        @click="togglePeak(d.key)"
-                        class="text-xs p-1 rounded border text-center transition-colors"
-                        :class="d.isPeak ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-500 border-slate-200'">
-                        {{ d.dateStr }}
-                    </button>
-                </div>
-            </div>
-            <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <div class="text-xs font-bold text-slate-500 mb-1">資料連線狀態</div>
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full" :class="firebaseConnected ? 'bg-green-500' : 'bg-red-500'"></div>
-                    <span class="text-sm font-bold">{{ firebaseConnected ? '已連線 Firebase' : '斷線中' }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <main class="flex-1 bg-slate-50 relative">
+    <main class="flex-1 bg-slate-50 relative overflow-hidden">
         
-        <div v-if="viewMode === 'list'" class="table-container">
+        <div v-if="viewMode === 'list'" class="table-view">
             <table class="milk-table">
                 <thead>
                     <tr>
-                        <th class="h-12 bg-slate-50"><div class="pl-1">PROJECT</div></th>
-                        <th v-for="(day, idx) in milkBankDays" :key="idx" 
-                            class="min-w-[90px]" 
-                            :class="{ 
-                                'bg-orange-50': day.isWeekend, 
-                                'peak-column': day.isPeak,
-                                'today-column': day.isToday 
-                            }">
+                        <th class="h-12 bg-slate-50 pl-2">項目</th>
+                        <th v-for="day in days" :key="day.key" 
+                            :class="[day.isToday ? 'today-bg' : (day.isPeak ? 'peak-bg' : (day.isWeekend ? 'weekend-bg' : ''))]">
                             <div class="flex flex-col items-center justify-center">
-                                <span class="text-sm font-black" :class="day.isWeekend ? 'text-red-500' : 'text-slate-700'">{{ day.weekDay }}</span>
-                                <span class="text-[10px] text-slate-500 font-bold">{{ day.dateStr }}</span>
+                                <span class="text-xs font-black" :class="day.isWeekend?'text-red-500':'text-slate-600'">{{ day.weekDay }}</span>
+                                <span class="text-[10px] text-slate-400 font-bold">{{ day.dateStr }}</span>
                             </div>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><i class="fas fa-cube text-slate-300 w-4"></i> 期初</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('inventory', day)"
-                            class="editable-cell num-font text-slate-400" :class="getCellClass(day)">
-                            {{ day.startStock.toFixed(1) }}
-                            <div v-if="day.isManual.inventory" class="manual-dot"></div>
+                        <td><i class="fas fa-cube text-slate-300 w-4 text-center"></i> 期初</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('inventory', d)" class="num-font text-slate-500" :class="getCellClass(d)">
+                            {{ d.startStock.toFixed(1) }}
+                            <div v-if="d.isManual.inventory" class="manual-dot"></div>
                         </td>
                     </tr>
                     <tr>
-                        <td><i class="fas fa-tint text-emerald-500 w-4"></i> 晨收</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('harvestAM', day)"
-                            class="editable-cell val-input num-font" :class="getCellClass(day)">
-                            +{{ day.harvestAM }}
-                            <div v-if="day.isManual.harvestAM" class="manual-dot"></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-truck text-red-400 w-4"></i> 晨配</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('deliveryRoute', day)"
-                            class="editable-cell val-deduct num-font" :class="getCellClass(day)">
-                            <span v-if="day.deliveryRoute > 0">-{{ day.deliveryRoute.toFixed(1) }}</span>
-                            <span v-else class="text-slate-200">-</span>
-                            <div v-if="day.isManual.deliveryRoute" class="manual-dot"></div>
-                        </td>
-                    </tr>
-                    <tr class="bg-blue-50/30">
-                        <td><i class="fas fa-users text-blue-500 w-4"></i> 家庭</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openChecklist(day)"
-                            class="editable-cell text-blue-700 font-bold num-font relative" :class="getCellClass(day)">
-                            <div v-if="day.deliveryHome > 0">
-                                -{{ day.deliveryHome.toFixed(1) }}
-                                <div class="text-[9px] text-blue-400 font-normal scale-90 origin-center mt-0.5">
-                                    {{ getHomeSummary(day.rawHomeList) }}
-                                </div>
-                            </div>
-                            <span v-else class="text-slate-200">-</span>
+                        <td><i class="fas fa-tint text-emerald-500 w-4 text-center"></i> 晨收</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('harvestAM', d)" class="num-font val-in" :class="getCellClass(d)">
+                            +{{ d.harvestAM }}
+                            <div v-if="d.isManual.harvestAM" class="manual-dot"></div>
                         </td>
                     </tr>
                     
                     <tr>
-                        <td><i class="fas fa-blender text-amber-600 w-4"></i> 加工</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('process', day)"
-                            class="editable-cell text-amber-700 font-bold num-font text-xs" :class="getCellClass(day)">
-                            <div v-if="day.process.vol > 0">
-                                -{{ day.process.vol.toFixed(1) }}
-                            </div>
+                        <td><i class="fas fa-truck text-slate-400 w-4 text-center"></i> 晨配</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('deliveryRoute', d)" class="num-font val-out" :class="getCellClass(d)">
+                            <span v-if="d.deliveryRoute > 0">-{{ d.deliveryRoute.toFixed(1) }}</span>
+                            <span v-else class="text-slate-200">-</span>
+                        </td>
+                    </tr>
+                    <tr class="bg-blue-50/20">
+                        <td><i class="fas fa-users text-blue-500 w-4 text-center"></i> 家庭</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('checklist', d)" class="num-font text-blue-600 font-bold relative" :class="getCellClass(d)">
+                            <span v-if="d.deliveryHome > 0">-{{ d.deliveryHome.toFixed(1) }}</span>
+                            <span v-else class="text-slate-200">-</span>
+                             <div v-if="d.homeSummary" class="text-[8px] text-blue-400 leading-none mt-0.5 scale-90">{{ d.homeSummary }}</div>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td><i class="fas fa-blender text-amber-500 w-4 text-center"></i> 加工</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('process', d)" class="num-font text-amber-600 font-bold text-xs" :class="getCellClass(d)">
+                            <div v-if="d.process.vol > 0">-{{ d.process.vol.toFixed(1) }}</div>
                             <span v-else class="text-slate-200">-</span>
                         </td>
                     </tr>
                     <tr>
-                        <td><i class="fas fa-bullhorn text-pink-500 w-4"></i> 快閃</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('flash', day)"
-                            class="editable-cell text-pink-600 font-bold num-font text-xs" :class="getCellClass(day)">
-                            <div v-if="day.flash.vol > 0">
-                                -{{ day.flash.vol }}
-                            </div>
+                        <td><i class="fas fa-bullhorn text-pink-500 w-4 text-center"></i> 快閃</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('flash', d)" class="num-font text-pink-600 font-bold text-xs" :class="getCellClass(d)">
+                             <div v-if="d.flash.vol > 0">-{{ d.flash.vol }}</div>
                             <span v-else class="text-slate-200">-</span>
                         </td>
                     </tr>
                     <tr>
-                        <td><i class="fas fa-clipboard-list text-purple-500 w-4"></i> 臨時</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('adhoc', day)"
-                            class="editable-cell text-purple-600 font-bold num-font text-xs" :class="getCellClass(day)">
-                            <div v-if="day.adhoc.total > 0">
-                                -{{ day.adhoc.total.toFixed(1) }}
-                            </div>
+                        <td><i class="fas fa-clipboard-list text-purple-500 w-4 text-center"></i> 臨時</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('adhoc', d)" class="num-font text-purple-600 font-bold text-xs" :class="getCellClass(d)">
+                            <div v-if="d.adhoc.total > 0">-{{ d.adhoc.total.toFixed(1) }}</div>
                             <span v-else class="text-slate-200">-</span>
                         </td>
                     </tr>
                     <tr>
-                        <td><i class="fas fa-boxes text-teal-500 w-4"></i> 團購</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('group', day)"
-                            class="editable-cell text-teal-600 font-bold num-font text-xs" :class="getCellClass(day)">
-                             <div v-if="day.group.vol > 0">
-                                -{{ day.group.vol }}
-                            </div>
+                        <td><i class="fas fa-boxes text-teal-500 w-4 text-center"></i> 團購</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('group', d)" class="num-font text-teal-600 font-bold text-xs" :class="getCellClass(d)">
+                             <div v-if="d.group.vol > 0">-{{ d.group.vol }}</div>
                             <span v-else class="text-slate-200">-</span>
                         </td>
                     </tr>
 
                     <tr>
-                        <td><i class="fas fa-moon text-indigo-400 w-4"></i> 晚收</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('harvestPM', day)"
-                            class="editable-cell val-input num-font" :class="getCellClass(day)">
-                            +{{ day.harvestPM }}
+                        <td><i class="fas fa-moon text-indigo-400 w-4 text-center"></i> 晚收</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('harvestPM', d)" class="num-font val-in" :class="getCellClass(d)">
+                            +{{ d.harvestPM }}
                         </td>
                     </tr>
-
-                    <tr>
-                        <td><i class="fas fa-balance-scale text-slate-400 w-4"></i> 調節</td>
-                        <td v-for="day in milkBankDays" :key="day.key" @click="openDrawer('variance', day)"
-                            class="editable-cell text-xs" :class="getCellClass(day)">
-                             <div v-if="day.variance.val !== 0" class="font-bold" :class="day.variance.val > 0 ? 'text-green-600' : 'text-red-600'">
-                                {{ day.variance.val > 0 ? '+' : ''}}{{ day.variance.val }}
-                                <i class="fas fa-info-circle text-[9px] ml-0.5"></i>
-                            </div>
+                    
+                     <tr>
+                        <td><i class="fas fa-balance-scale text-slate-400 w-4 text-center"></i> 調節</td>
+                        <td v-for="d in days" :key="d.key" @click="edit('variance', d)" class="text-xs" :class="getCellClass(d)">
+                            <span v-if="d.variance.val !== 0" :class="d.variance.val>0?'text-green-600':'text-red-600'" class="font-bold">
+                                {{ d.variance.val>0?'+':'' }}{{ d.variance.val }}
+                            </span>
                             <span v-else class="text-slate-100">-</span>
                         </td>
                     </tr>
 
                     <tr class="h-14 border-t-2 border-slate-300 sticky bottom-0 z-20 shadow-lg">
-                        <td class="font-black text-slate-800 bg-slate-50 border-t-2 border-slate-300">結餘</td>
-                        <td v-for="day in milkBankDays" :key="day.key" 
-                            class="val-balance num-font"
-                            :class="[
-                                getStockClass(day.endStock),
-                                day.isToday ? 'today-column' : ''
-                            ]">
-                            {{ day.endStock.toFixed(1) }}
+                        <td class="bg-slate-50 font-black text-slate-700 border-t-2 border-slate-300">結餘</td>
+                        <td v-for="d in days" :key="d.key" class="val-balance num-font" :class="getStockClass(d.endStock)">
+                            {{ d.endStock.toFixed(1) }}
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div v-else class="h-full overflow-y-auto pb-24 bg-slate-100 p-2">
-            <div class="grid grid-cols-7 gap-1 text-center mb-2 sticky top-0 bg-slate-100 z-10 pt-2 pb-2">
-                <div v-for="w in ['日','一','二','三','四','五','六']" :key="w" class="text-xs font-bold text-slate-500">{{w}}</div>
+        <div v-else class="h-full overflow-y-auto p-2 pb-24 bg-slate-100">
+            <div class="grid grid-cols-7 gap-1 text-center mb-2 text-xs font-bold text-slate-400">
+                <div v-for="w in ['日','一','二','三','四','五','六']">{{w}}</div>
             </div>
             <div class="calendar-grid">
-                <div v-for="n in 3" :key="'empty'+n" class="cal-day opacity-0 pointer-events-none border-none bg-transparent"></div>
-
-                <div v-for="day in milkBankDays" :key="day.key" 
-                     @click="openDrawer('inventory', day)"
-                     class="cal-day"
-                     :class="[
-                        day.isPeak ? 'bg-purple-50 border-purple-200' : (day.isWeekend ? 'bg-orange-50' : 'bg-white'),
-                        day.isToday ? 'ring-2 ring-blue-400 z-10' : ''
-                     ]">
+                <div v-for="n in 3" class="opacity-0"></div> <div v-for="d in days" :key="d.key" @click="edit('inventory', d)" 
+                    class="cal-day relative"
+                    :class="[d.isPeak?'peak-bg':(d.isWeekend?'weekend-bg':''), d.isToday?'ring-2 ring-blue-500 z-10':'']">
                     
                     <div class="flex justify-between items-start mb-1">
                         <div>
-                            <span class="text-sm font-black" :class="day.isWeekend ? 'text-red-500' : 'text-slate-700'">{{ day.dateStr.split('/')[1] }}</span>
-                            <span class="text-[9px] text-slate-400 ml-1">{{ day.lunar }}</span>
+                            <span class="text-sm font-black" :class="d.isWeekend?'text-red-500':'text-slate-700'">{{ d.dateStr.split('/')[1] }}</span>
+                            <span class="text-[9px] text-slate-400 ml-1">{{ d.lunar }}</span>
                         </div>
-                        <div v-if="day.variance.val !== 0" class="text-[9px] px-1 rounded bg-slate-200 font-bold">調</div>
+                        <div v-if="d.variance.val!==0" class="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
                     </div>
 
-                    <div class="flex-1 flex flex-col gap-0.5 justify-start pt-1">
-                        <div v-if="day.deliveryHome>0" class="cal-row">
-                            <span><i class="fas fa-users text-blue-400 w-3"></i></span>
-                            <span class="font-bold text-blue-600">{{ day.deliveryHome.toFixed(0) }}</span>
-                        </div>
-                        <div v-if="day.process.vol>0" class="cal-row">
-                            <span><i class="fas fa-blender text-amber-400 w-3"></i></span>
-                            <span class="font-bold text-amber-600">{{ day.process.vol.toFixed(0) }}</span>
-                        </div>
-                         <div v-if="day.flash.vol>0" class="cal-row">
-                            <span><i class="fas fa-bullhorn text-pink-400 w-3"></i></span>
-                            <span class="font-bold text-pink-600">{{ day.flash.vol }}</span>
-                        </div>
-                         <div v-if="day.adhoc.total>0" class="cal-row">
-                            <span><i class="fas fa-clipboard text-purple-400 w-3"></i></span>
-                            <span class="font-bold text-purple-600">{{ day.adhoc.total.toFixed(0) }}</span>
-                        </div>
+                    <div class="flex-1 flex flex-col gap-0.5">
+                        <div v-if="d.deliveryHome>0" class="cal-row"><span><i class="fas fa-users text-blue-400"></i></span><span class="text-blue-600 font-bold">{{ d.deliveryHome.toFixed(0) }}</span></div>
+                        <div v-if="d.process.vol>0" class="cal-row"><span><i class="fas fa-blender text-amber-400"></i></span><span class="text-amber-600 font-bold">{{ d.process.vol.toFixed(0) }}</span></div>
+                        <div v-if="d.flash.vol>0" class="cal-row"><span><i class="fas fa-bullhorn text-pink-400"></i></span><span class="text-pink-600 font-bold">{{ d.flash.vol }}</span></div>
+                        <div v-if="d.adhoc.total>0" class="cal-row"><span><i class="fas fa-clipboard text-purple-400"></i></span><span class="text-purple-600 font-bold">{{ d.adhoc.total.toFixed(0) }}</span></div>
+                        <div v-if="d.group.vol>0" class="cal-row"><span><i class="fas fa-boxes text-teal-400"></i></span><span class="text-teal-600 font-bold">{{ d.group.vol }}</span></div>
                     </div>
 
                     <div class="mt-auto pt-1 border-t border-slate-100 text-right">
-                        <div class="text-sm font-black" :class="getStockTextClass(day.endStock)">
-                            {{ day.endStock.toFixed(0) }}
-                        </div>
+                        <span class="text-sm font-black" :class="getStockTextClass(d.endStock)">{{ d.endStock.toFixed(0) }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <div v-if="drawer.show" class="drawer-overlay" @click="closeDrawer"></div>
-    <div class="drawer" :class="{ 'open': drawer.show }">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+    <div v-if="drawer.show" class="drawer-mask" @click="drawer.show=false"></div>
+    <div class="drawer-body" :class="{ 'active': drawer.show }">
+        <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 rounded-t-2xl flex justify-between items-center">
             <div>
-                <h3 class="text-lg font-black text-slate-800">{{ drawer.title }}</h3>
-                <p class="text-xs text-slate-500">{{ drawer.dateLabel }}</p>
+                <div class="text-lg font-black text-slate-800">{{ drawer.title }}</div>
+                <div class="text-xs text-slate-500">{{ drawer.dateLabel }}</div>
             </div>
-            <button @click="saveDrawer" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition">確認</button>
+            <button @click="save" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition">確認</button>
         </div>
         
-        <div class="flex-1 overflow-y-auto p-6 bg-white pb-10">
-            
-            <div v-if="['inventory','harvestAM','harvestPM','deliveryRoute', 'flash', 'group'].includes(drawer.type)" class="flex flex-col gap-6">
+        <div class="p-6 overflow-y-auto flex-1 bg-white pb-10">
+            <div v-if="['inventory','harvestAM','harvestPM','deliveryRoute','flash','group','variance'].includes(drawer.type)" class="space-y-6">
                 <div class="flex items-center gap-4">
                     <button @click="adj(-1)" class="w-14 h-14 bg-slate-100 rounded-xl text-lg font-bold hover:bg-slate-200"><i class="fas fa-minus"></i></button>
-                    <input v-model.number="drawer.val" type="number" step="0.1" class="flex-1 text-center text-5xl font-black text-slate-800 focus:outline-none py-2 border-b-2 border-slate-100 focus:border-blue-500 transition-colors">
+                    <input v-model.number="drawer.val" type="number" step="0.1" class="flex-1 text-center text-5xl font-black text-slate-800 focus:outline-none border-b-2 border-slate-100 py-2">
                     <button @click="adj(1)" class="w-14 h-14 bg-slate-100 rounded-xl text-lg font-bold hover:bg-slate-200"><i class="fas fa-plus"></i></button>
                 </div>
-                <div v-if="['flash','group'].includes(drawer.type)">
-                    <label class="text-xs font-bold text-slate-400 mb-1 block">備註說明</label>
-                    <input v-model="drawer.text" type="text" placeholder="輸入地點或品項" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div v-if="['flash','group','variance'].includes(drawer.type)">
+                    <label class="text-xs font-bold text-slate-400 mb-1 block">備註 / 地點 / 原因</label>
+                    <input v-model="drawer.text" type="text" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 font-bold">
                 </div>
             </div>
 
-            <div v-if="drawer.type === 'variance'" class="space-y-4">
-                 <div class="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 leading-relaxed">
-                    <i class="fas fa-info-circle mr-1"></i> 當「昨日結餘」與「今日初期盤點」不符時，請在此輸入差異值。
-                    <br><span class="text-xs text-slate-400">例如：打破 -2，多出 +1</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <button @click="adj(-1)" class="w-12 h-12 bg-red-100 text-red-600 rounded-xl font-bold">-1</button>
-                    <input v-model.number="drawer.val" type="number" step="0.1" class="flex-1 text-center text-4xl font-black focus:outline-none">
-                    <button @click="adj(1)" class="w-12 h-12 bg-green-100 text-green-600 rounded-xl font-bold">+1</button>
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-400 mb-1 block">原因備註</label>
-                    <textarea v-model="drawer.text" rows="2" class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200" placeholder="例如：裝瓶溢出損耗"></textarea>
-                </div>
-            </div>
-
-            <div v-if="drawer.type === 'adhoc'" class="space-y-6">
+            <div v-if="drawer.type === 'adhoc'" class="space-y-4">
                  <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
-                        <label class="text-xs font-bold text-purple-800 block mb-2">大瓶 (0.95L)</label>
-                        <div class="flex items-center justify-between">
-                            <button @click="drawer.adBig = Math.max(0, drawer.adBig-1)" class="btn-circle">-</button>
+                    <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                        <div class="text-xs font-bold text-purple-800 mb-2">大瓶 (0.95)</div>
+                        <div class="flex justify-between items-center">
+                            <button @click="drawer.adBig = Math.max(0, drawer.adBig-1)" class="w-8 h-8 bg-white rounded-full shadow font-bold">-</button>
                             <span class="text-2xl font-black text-purple-700">{{ drawer.adBig }}</span>
-                            <button @click="drawer.adBig++" class="btn-circle">+</button>
+                            <button @click="drawer.adBig++" class="w-8 h-8 bg-white rounded-full shadow font-bold">+</button>
                         </div>
                     </div>
-                    <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
-                        <label class="text-xs font-bold text-purple-800 block mb-2">中瓶 (0.5L)</label>
-                        <div class="flex items-center justify-between">
-                            <button @click="drawer.adSmall = Math.max(0, drawer.adSmall-1)" class="btn-circle">-</button>
+                    <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                        <div class="text-xs font-bold text-purple-800 mb-2">中瓶 (0.5)</div>
+                        <div class="flex justify-between items-center">
+                            <button @click="drawer.adSmall = Math.max(0, drawer.adSmall-1)" class="w-8 h-8 bg-white rounded-full shadow font-bold">-</button>
                             <span class="text-2xl font-black text-purple-700">{{ drawer.adSmall }}</span>
-                            <button @click="drawer.adSmall++" class="btn-circle">+</button>
+                            <button @click="drawer.adSmall++" class="w-8 h-8 bg-white rounded-full shadow font-bold">+</button>
                         </div>
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-slate-500 mb-1 block">餐廳/特殊配送 (L)</label>
+                    <label class="text-xs font-bold text-slate-500 mb-1 block">餐廳/特殊 (L)</label>
                     <input v-model.number="drawer.adCustom" type="number" class="w-full bg-slate-100 rounded-xl p-3 text-xl font-bold">
                 </div>
-                <div class="text-center text-purple-600 font-bold">
-                    總計: {{ ((drawer.adBig*0.95)+(drawer.adSmall*0.5)+drawer.adCustom).toFixed(1) }} L
-                </div>
+                <div class="text-center font-bold text-purple-600">總計: {{ ((drawer.adBig*0.95)+(drawer.adSmall*0.5)+drawer.adCustom).toFixed(1) }} L</div>
             </div>
 
             <div v-if="drawer.type === 'process'" class="space-y-4">
-                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-amber-50 p-4 rounded-xl text-center" @click="drawer.pSmall++">
-                        <div class="text-xs font-bold text-amber-800">小饅頭 (3.7L)</div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-amber-50 p-4 rounded-xl text-center active:bg-amber-100" @click="drawer.pSmall++">
+                        <div class="text-xs font-bold text-amber-800">小饅頭 (3.7)</div>
                         <div class="text-3xl font-black text-amber-600 my-2">{{ drawer.pSmall }}</div>
                     </div>
-                    <div class="bg-orange-50 p-4 rounded-xl text-center" @click="drawer.pBig++">
-                        <div class="text-xs font-bold text-orange-800">大饅頭 (1.3L)</div>
+                    <div class="bg-orange-50 p-4 rounded-xl text-center active:bg-orange-100" @click="drawer.pBig++">
+                        <div class="text-xs font-bold text-orange-800">大饅頭 (1.3)</div>
                         <div class="text-3xl font-black text-orange-600 my-2">{{ drawer.pBig }}</div>
                     </div>
                 </div>
-                <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
-                    <button @click="drawer.pSmall=0;drawer.pBig=0" class="text-red-400 text-sm font-bold">重置</button>
-                    <div class="text-xl font-black text-slate-800">
-                         {{ ((drawer.pSmall*3.7)+(drawer.pBig*1.3)).toFixed(1) }} L
-                    </div>
+                <div class="flex justify-between items-center pt-2">
+                    <button @click="drawer.pSmall=0;drawer.pBig=0" class="text-xs text-red-400 font-bold underline">重置</button>
+                    <div class="text-xl font-black text-slate-800">{{ ((drawer.pSmall*3.7)+(drawer.pBig*1.3)).toFixed(1) }} L</div>
                 </div>
             </div>
 
-            <div v-if="drawer.type === 'checklist'" class="space-y-4">
-                 <div v-if="drawer.isSunday" class="bg-indigo-50 p-3 rounded-lg flex justify-between items-center">
+            <div v-if="drawer.type === 'checklist'" class="space-y-3">
+                 <div v-if="drawer.isSunday" class="bg-indigo-50 p-2 rounded flex justify-between items-center mb-2">
                     <span class="text-xs font-bold text-indigo-700">週日頁面</span>
-                    <button @click="loadMondayData" class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">載入週一單</button>
+                    <button @click="loadMonday" class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">載入週一單</button>
                 </div>
-                <div v-for="(item, idx) in drawer.list" :key="idx" class="flex items-center justify-between py-2 border-b border-slate-50">
+                <div v-for="(item, idx) in drawer.list" :key="idx" class="flex justify-between items-center py-2 border-b border-slate-50">
                     <div>
-                        <div class="font-bold text-sm">{{ item.name }}</div>
+                        <div class="font-bold text-sm text-slate-700">{{ item.name }}</div>
                         <div class="text-xs text-slate-400">{{ item.big>0?item.big+'大':'' }} {{ item.small>0?item.small+'小':'' }}</div>
                     </div>
                     <div class="flex gap-2">
-                         <button @click="toggleStatus(idx, 'split')" class="w-8 h-8 rounded border flex items-center justify-center" :class="item.status==='split'?'bg-red-500 text-white border-red-500':'border-slate-200 text-slate-300'"><span class="text-xs">拆</span></button>
-                         <button @click="toggleStatus(idx, 'done')" class="w-8 h-8 rounded border flex items-center justify-center" :class="item.status==='done'?'bg-blue-600 text-white border-blue-600':'border-slate-200 text-slate-300'"><i class="fas fa-check"></i></button>
+                        <button @click="toggleStatus(idx,'split')" class="w-9 h-9 rounded border flex items-center justify-center transition-colors" :class="item.status==='split'?'bg-red-500 text-white':'border-slate-200 text-slate-300'"><span class="text-xs font-bold">拆</span></button>
+                        <button @click="toggleStatus(idx,'done')" class="w-9 h-9 rounded border flex items-center justify-center transition-colors" :class="item.status==='done'?'bg-blue-600 text-white':'border-slate-200 text-slate-300'"><i class="fas fa-check"></i></button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
+    <div class="sidebar" :class="{ 'open': sidebarOpen }">
+        <div class="sidebar-bg" @click="sidebarOpen=false"></div>
+        <div class="sidebar-panel flex flex-col p-6 space-y-6">
+            <div>
+                <h2 class="text-xl font-black text-slate-800">設定選單</h2>
+                <p class="text-xs text-slate-400">V15.0 Director's Cut</p>
+            </div>
+            
+            <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                <h3 class="text-sm font-bold text-purple-800 mb-2"><i class="fas fa-calendar-check mr-2"></i>設定高峰期 (紫色)</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <button v-for="d in days.slice(0,12)" :key="d.key" @click="togglePeak(d.key)" 
+                        class="text-[10px] p-1 rounded border text-center transition-colors"
+                        :class="d.isPeak?'bg-purple-600 text-white border-purple-600':'bg-white text-slate-500'">
+                        {{ d.dateStr }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-4 border-t border-slate-100">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-500">
+                    <div class="w-2 h-2 rounded-full" :class="firebaseConnected?'bg-green-500':'bg-red-500'"></div>
+                    {{ firebaseConnected ? '系統連線正常' : '離線模式' }}
+                </div>
+            </div>
         </div>
     </div>
 
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, reactive } = Vue;
 
-    // Firebase Config
+    // Config
     const firebaseConfig = {
         apiKey: "AIzaSyB6D9vh6J2mdnjz2VXEVe99oi7oLF-irFo",
         authDomain: "crm-ts-1225-001.firebaseapp.com",
@@ -464,319 +374,231 @@
         messagingSenderId: "925760221722",
         appId: "1:925760221722:web:1aeda0b82f1f16b8dcd7a3"
     };
-
-    // Google Sheets CSVs
+    
+    // CSV Sources
     const CSV_ROUTE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF9dZUNtfJjbPIf4_3wvrJoVIv7WxGrXKEit9V0ou25BA9L1lMCEjqykH41p3f2MZc2b02nMLJXnrw/pub?gid=216467280&single=true&output=csv';
     const CSV_HOME = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF9dZUNtfJjbPIf4_3wvrJoVIv7WxGrXKEit9V0ou25BA9L1lMCEjqykH41p3f2MZc2b02nMLJXnrw/pub?gid=59343971&single=true&output=csv';
 
     createApp({
         setup() {
-            // Firebase Init
+            // State
             firebase.initializeApp(firebaseConfig);
-            const db = firebase.database();
-            const dbRef = db.ref('milkBankV14'); // V14 node
-
+            const db = firebase.database().ref('milkBankV15');
             const firebaseConnected = ref(false);
-            const savedData = ref({});
+            
             const rawRoute = ref([]);
             const rawHome = ref([]);
+            const savedData = ref({});
+            const peakDates = ref({});
+            
             const viewMode = ref('list');
             const sidebarOpen = ref(false);
-            const peakDates = ref({}); // { '2026-2-14': true }
-
+            const toast = ref({ show:false, msg:'' });
+            
             const drawer = ref({ 
-                show: false, type: '', title: '', dateLabel: '', key: '', 
-                val: 0, text: '', 
-                pSmall: 0, pBig: 0, 
-                adBig: 0, adSmall: 0, adCustom: 0,
-                list: [] 
+                show:false, type:'', title:'', key:'', dateLabel:'', 
+                val:0, text:'', pSmall:0, pBig:0, adBig:0, adSmall:0, adCustom:0, list:[] 
             });
 
-            const START_DATE = new Date('2026-02-04'); 
-            const WEEK_DAYS = ['日','一','二','三','四','五','六'];
-            const TODAY_KEY = new Date().toISOString().split('T')[0]; // YYYY-MM-DD based on local
+            // Date Setup
+            const START = new Date('2026-02-04');
+            const WEEK = ['日','一','二','三','四','五','六'];
+            const todayKey = new Date().toISOString().split('T')[0];
 
-            // Init
+            // Load Data
             onMounted(async () => {
-                // Load CSVs
                 try {
                     const [r1, r2] = await Promise.all([fetch(CSV_ROUTE).then(x=>x.text()), fetch(CSV_HOME).then(x=>x.text())]);
-                    parseRoute(r1);
-                    parseHome(r2);
-                } catch(e) { console.error("CSV Err", e); }
-
-                // Load Firebase
-                dbRef.on('value', (snapshot) => {
-                    firebaseConnected.value = true;
-                    const val = snapshot.val();
-                    if(val) {
-                        savedData.value = val.days || {};
-                        peakDates.value = val.peaks || {};
-                    }
-                }, (err) => { firebaseConnected.value = false; });
-
-                // Connection status check
-                db.ref('.info/connected').on('value', snap => firebaseConnected.value = snap.val());
+                    parseRoute(r1); parseHome(r2);
+                    
+                    db.on('value', snap => {
+                        firebaseConnected.value = true;
+                        const v = snap.val() || {};
+                        savedData.value = v.days || {};
+                        peakDates.value = v.peaks || {};
+                    });
+                    firebase.database().ref('.info/connected').on('value', s => firebaseConnected.value = s.val());
+                } catch(e) { console.error(e); showToast('資料載入失敗'); }
             });
 
-            // Logic
-            const milkBankDays = computed(() => {
-                const list = [];
-                let runningStock = 0;
-
+            // Core Logic (The Director's Rules Applied)
+            const days = computed(() => {
+                let stock = 0;
+                const res = [];
+                
                 for(let i=0; i<30; i++) {
-                    const dObj = new Date(START_DATE);
-                    dObj.setDate(START_DATE.getDate() + i);
+                    const d = new Date(START); d.setDate(START.getDate()+i);
+                    const y=d.getFullYear(), m=d.getMonth()+1, dd=d.getDate();
+                    const key = `${y}-${m}-${dd}`;
+                    const iso = d.toISOString().split('T')[0];
+                    const wIdx = d.getDay();
                     
-                    // Date Format fixed
-                    const y = dObj.getFullYear();
-                    const m = dObj.getMonth()+1;
-                    const d = dObj.getDate();
-                    // Fix Key format to be consistently YYYY-M-D or YYYY-MM-DD. Let's use simplified.
-                    const dateKey = `${y}-${m}-${d}`;
+                    // Retrieve Saved Data (Normalization)
+                    const s = savedData.value[key] || {};
                     
-                    // Standard ISO key for Today comparison
-                    const isoKey = dObj.toISOString().split('T')[0];
-                    const isToday = (isoKey === new Date().toISOString().split('T')[0]);
-
-                    const dayIdx = dObj.getDay(); 
-
-                    // Get Firebase Data for this day
-                    const saved = savedData.value[dateKey] || {};
-
-                    // 1. Route
-                    let deliveryRoute = (rawRoute.value[dayIdx] || 0) * 0.18;
-                    if(saved.deliveryRoute !== undefined) deliveryRoute = saved.deliveryRoute;
-
-                    // 2. Home Delivery
-                    let deliveryHome = 0;
-                    const defaultList = (dayIdx >=1 && dayIdx <=5) ? (rawHome.value[dayIdx-1] || []) : [];
-                    const activeList = saved.customList || defaultList;
-                    const checklist = saved.checklist || {};
+                    // Calc Factors
+                    let route = (rawRoute.value[wIdx]||0) * 0.18;
+                    if(s.deliveryRoute !== undefined) route = s.deliveryRoute;
                     
-                    activeList.forEach(item => {
-                        const stat = checklist[item.uuid] || 'done';
-                        let factor = (stat==='split') ? 0.5 : (stat==='done'?1:0);
-                        deliveryHome += ((item.big*0.95) + (item.small*0.5)) * factor;
+                    // Home Logic
+                    let home = 0;
+                    const defList = (wIdx>=1 && wIdx<=5) ? (rawHome.value[wIdx-1]||[]) : [];
+                    const actList = s.customList || defList;
+                    const chk = s.checklist || {};
+                    
+                    actList.forEach(item => {
+                        const st = chk[item.uuid] || 'done';
+                        const fac = st==='split'?0.5 : (st==='done'?1:0);
+                        home += ((item.big*0.95)+(item.small*0.5)) * fac;
                     });
 
-                    // 3. User Inputs
-                    const harvestAM = saved.harvestAM ?? 13;
-                    const harvestPM = saved.harvestPM ?? 15;
-                    const flash = saved.flash || { vol:0, loc:'' };
-                    const process = saved.process || { vol:0 };
-                    const adhoc = saved.adhoc || { total:0, big:0, small:0, custom:0 };
-                    const group = saved.group || { vol:0, note:'' };
-                    const variance = saved.variance || { val:0, note:'' };
+                    // Inputs (Fail-safe defaults)
+                    const hAM = s.harvestAM ?? 13;
+                    const hPM = s.harvestPM ?? 15;
+                    const flash = s.flash || { vol:0, loc:'' };
+                    const process = s.process || { vol:0 };
+                    const adhoc = s.adhoc || { total:0, big:0, small:0, custom:0 };
+                    const group = s.group || { vol:0, note:'' };
+                    const vari = s.variance || { val:0, note:'' };
 
-                    // 4. Stock Calc
-                    let startStock = runningStock;
-                    if(i===0 && saved.inventory===undefined) startStock = 10;
-                    if(saved.inventory !== undefined) startStock = saved.inventory;
-
-                    // Variance affects the End Stock directly? Or modifies Start of Next Day?
-                    // User requested "Yesterday remaining vs Today Start discrepancy".
-                    // Best implementation: Variance is added to THIS day's calculation to reconcile the End Stock.
-                    const endStock = startStock + harvestAM + harvestPM - deliveryRoute - deliveryHome - flash.vol - process.vol - adhoc.total - group.vol + variance.val;
-                    runningStock = endStock;
+                    // Stock
+                    if(i===0 && s.inventory===undefined) stock = 10;
+                    if(s.inventory !== undefined) stock = s.inventory;
+                    
+                    const end = stock + hAM + hPM - route - home - flash.vol - process.vol - adhoc.total - group.vol + vari.val;
+                    stock = end; // Carry forward
 
                     // Lunar
                     let lunar = '';
                     try { const l = Lunar.fromSolar(Solar.fromYmd(y,m,d)); lunar = l.getDayInChinese(); } catch(e){}
 
-                    list.push({
-                        key: dateKey, dateStr: `${m}/${d}`, weekDay: WEEK_DAYS[dayIdx], 
-                        isWeekend: dayIdx===0||dayIdx===6, isToday,
-                        isPeak: !!peakDates.value[dateKey],
+                    res.push({
+                        key, dateStr:`${m}/${dd}`, weekDay: WEEK[wIdx],
+                        isWeekend: wIdx===0||wIdx===6, isToday: iso===todayKey, isPeak: !!peakDates.value[key],
                         lunar,
-                        startStock, harvestAM, harvestPM, deliveryRoute, deliveryHome,
-                        flash, process, adhoc, group, variance, endStock,
-                        rawHomeList: activeList,
-                        isManual: {
-                            inventory: saved.inventory!==undefined,
-                            harvestAM: saved.harvestAM!==undefined,
-                            deliveryRoute: saved.deliveryRoute!==undefined
-                        }
+                        startStock: s.inventory!==undefined ? s.inventory : (i===0?10:res[i-1].endStock), // Recalc for display precision
+                        harvestAM: hAM, harvestPM: hPM, deliveryRoute: route, deliveryHome: home,
+                        flash, process, adhoc, group, variance: vari, endStock: end,
+                        rawHomeList: actList,
+                        homeSummary: getHomeSum(actList),
+                        isManual: { inventory: s.inventory!==undefined, harvestAM: s.harvestAM!==undefined }
                     });
                 }
-                return list;
+                return res;
             });
 
-            const todayEndStock = computed(() => milkBankDays.value.find(d => d.isToday)?.endStock || 0);
-
-            // Helpers
-            const getHomeSummary = (list) => {
-                let b=0, s=0;
-                list.forEach(i => { b+=i.big; s+=i.small; });
-                return (b>0||s>0) ? `${b}大 ${s}小` : '';
-            };
-
-            const getStockClass = (val) => {
-                if(val > 160) return 'alert-red';
-                if(val > 100) return 'alert-yellow';
-                if(val < 0) return 'val-neg';
-                return '';
-            };
-            
-            const getStockTextClass = (val) => {
-                if(val > 160) return 'text-red-700';
-                if(val > 100) return 'text-yellow-700';
-                if(val < 0) return 'text-red-500';
-                return 'text-blue-600';
-            };
-
-            const getCellClass = (day) => {
-                const classes = [];
-                if(day.isPeak) classes.push('peak-column');
-                if(day.isToday) classes.push('today-column');
-                else if(day.isWeekend) classes.push('bg-orange-50/50');
-                return classes.join(' ');
-            };
+            const todayData = computed(() => days.value.find(d => d.isToday));
+            const todayEndStock = computed(() => todayData.value ? todayData.value.endStock : 0);
+            const todayStr = computed(() => todayData.value ? todayData.value.dateStr : '');
 
             // Drawer Logic
-            const openDrawer = (type, day) => {
+            const edit = (type, d) => {
                 drawer.value.show = true;
                 drawer.value.type = type;
-                drawer.value.key = day.key;
-                drawer.value.dateLabel = `${day.dateStr} ${day.weekDay}`;
-                
-                // Load Data
-                if(type === 'adhoc') {
-                    const d = day.adhoc;
-                    drawer.value.adBig = d.big||0; drawer.value.adSmall=d.small||0; drawer.value.adCustom=d.custom||0;
-                    drawer.value.title = "臨時/特殊訂單";
-                } else if(type === 'process') {
-                    // Simple input for now, reset buttons
+                drawer.value.key = d.key;
+                drawer.value.dateLabel = `${d.dateStr} ${d.weekDay}`;
+                drawer.value.title = getTitle(type);
+
+                // Load Values
+                if(type==='adhoc') {
+                    const a = d.adhoc;
+                    drawer.value.adBig = a.big||0; drawer.value.adSmall = a.small||0; drawer.value.adCustom = a.custom||0;
+                } else if (type==='process') {
                     drawer.value.pSmall=0; drawer.value.pBig=0;
-                    drawer.value.title = "加工製作";
-                } else if(type === 'variance') {
-                    drawer.value.val = day.variance.val;
-                    drawer.value.text = day.variance.note;
-                    drawer.value.title = "庫存調節 (損耗)";
-                } else if(type === 'group') {
-                    drawer.value.val = day.group.vol;
-                    drawer.value.text = day.group.note;
-                    drawer.value.title = "團購備貨";
-                } else if(type === 'flash') {
-                     drawer.value.val = day.flash.vol;
-                    drawer.value.text = day.flash.loc;
-                    drawer.value.title = "快閃活動";
+                } else if (type==='checklist') {
+                    drawer.value.isSunday = d.weekDay === '日';
+                    const savedChk = (savedData.value[d.key]||{}).checklist || {};
+                    drawer.value.list = d.rawHomeList.map(i => ({...i, status: savedChk[i.uuid]||'done'}));
+                } else if (type==='flash') {
+                     drawer.value.val = d.flash.vol; drawer.value.text = d.flash.loc;
+                } else if (type==='group') {
+                     drawer.value.val = d.group.vol; drawer.value.text = d.group.note;
+                } else if (type==='variance') {
+                     drawer.value.val = d.variance.val; drawer.value.text = d.variance.note;
                 } else {
-                    drawer.value.val = day[type];
-                    drawer.value.title = {
-                        inventory:'期初庫存', harvestAM:'晨間收乳', harvestPM:'晚間收乳', deliveryRoute:'晨間配送'
-                    }[type];
+                    drawer.value.val = d[type];
                 }
             };
 
-            const openChecklist = (day) => {
-                drawer.value.show = true;
-                drawer.value.type = 'checklist';
-                drawer.value.title = '家庭號出貨點名';
-                drawer.value.key = day.key;
-                drawer.value.dateLabel = day.dateStr;
-                drawer.value.isSunday = new Date(day.key).getDay() === 0;
-
-                const saved = (savedData.value[day.key] || {}).checklist || {};
-                drawer.value.list = day.rawHomeList.map(i => ({
-                    ...i, status: saved[i.uuid] || 'done'
-                }));
-            };
-
-            // Actions
-            const saveDrawer = () => {
+            const save = () => {
                 const { key, type, val, text, adBig, adSmall, adCustom, pSmall, pBig } = drawer.value;
-                const path = `milkBankV14/days/${key}`;
-                
-                const updates = {};
-                
-                if(type === 'adhoc') {
-                    updates[`${path}/adhoc`] = { 
-                        total: (adBig*0.95)+(adSmall*0.5)+adCustom, 
-                        big: adBig, small: adSmall, custom: adCustom 
-                    };
-                } else if(type === 'process') {
-                    // Accumulate? For V14 let's simple Add to existing if users want, but here replace for simplicity or smart add
-                    // To keep it clean: We just save the Input Total calculated here
-                     const currentVol = (savedData.value[key]?.process?.vol || 0);
-                     const newVol = (pSmall*3.7)+(pBig*1.3);
-                     // Logic: If user clicked buttons, add to current. 
-                     // Wait, better UX: Just Save the calc. User mentally adds.
-                     updates[`${path}/process`] = { vol: newVol + currentVol }; 
-                } else if(type === 'checklist') {
+                const path = `days/${key}`;
+                const up = {};
+
+                if(type==='adhoc') {
+                    up[`${path}/adhoc`] = { total: (adBig*0.95)+(adSmall*0.5)+adCustom, big: adBig, small: adSmall, custom: adCustom };
+                } else if(type==='process') {
+                    const add = (pSmall*3.7)+(pBig*1.3);
+                    const curr = (savedData.value[key]?.process?.vol || 0);
+                    up[`${path}/process`] = { vol: curr + add };
+                } else if(type==='checklist') {
                     const map = {};
                     drawer.value.list.forEach(i => map[i.uuid] = i.status);
-                    updates[`${path}/checklist`] = map;
-                } else if(type === 'variance') {
-                    updates[`${path}/variance`] = { val, note: text };
-                } else if(type === 'flash') {
-                    updates[`${path}/flash`] = { vol: val, loc: text };
-                } else if(type === 'group') {
-                    updates[`${path}/group`] = { vol: val, note: text };
+                    up[`${path}/checklist`] = map;
+                } else if(['flash','group','variance'].includes(type)) {
+                    // Critical Fix: Explicit object structure for Flash/Group
+                    const field = type; // flash, group, variance
+                    const noteField = type==='flash' ? 'loc' : 'note';
+                    up[`${path}/${field}`] = { vol: Number(val), [noteField]: text || '' };
+                    if(type === 'variance') up[`${path}/variance`] = { val: Number(val), note: text || '' }; // Variance uses 'val' not 'vol'
                 } else {
-                    updates[`${path}/${type}`] = val;
+                    up[`${path}/${type}`] = Number(val);
                 }
 
-                dbRef.update(updates);
-                drawer.value.show = false;
+                db.update(up).then(() => {
+                    showToast('已儲存更新');
+                    drawer.value.show = false;
+                });
             };
 
-            const togglePeak = (key) => {
-                const newVal = !peakDates.value[key];
-                dbRef.child(`peaks/${key}`).set(newVal ? true : null);
+            const togglePeak = (k) => {
+                const v = !peakDates.value[k];
+                db.child(`peaks/${k}`).set(v ? true : null);
             };
-
-            const toggleStatus = (idx, s) => {
-                const item = drawer.value.list[idx];
-                item.status = (item.status === s) ? 'skip' : s;
+            const toggleStatus = (i,s) => { const it = drawer.value.list[i]; it.status = it.status===s ? 'skip' : s; };
+            const loadMonday = () => {
+                db.child(`days/${drawer.value.key}/customList`).set(rawHome.value[0]);
+                drawer.value.show = false; showToast('已載入週一訂單');
             };
+            
+            // Helpers
+            const adj = (n) => drawer.value.val = parseFloat((drawer.value.val+n).toFixed(1));
+            const getHomeSum = (l) => { let b=0,s=0; l.forEach(i=>{b+=i.big;s+=i.small}); return (b||s)?`${b}大${s}小`:null; };
+            const showToast = (m) => { toast.value = {show:true, msg:m}; setTimeout(()=>toast.value.show=false, 2000); };
+            const getTitle = (t) => ({inventory:'期初庫存',harvestAM:'晨間收乳',harvestPM:'晚間收乳',deliveryRoute:'晨間配送',checklist:'家庭號點名',flash:'快閃活動',process:'加工製作',adhoc:'臨時訂單',group:'團購備貨',variance:'庫存調節'}[t]||t);
+            const getCellClass = (d) => [d.isToday?'today-bg':'', d.isPeak?'peak-bg':'', d.isWeekend&&!d.isPeak?'weekend-bg':''].join(' ');
+            const getStockClass = (v) => v>160?'val-danger':(v>100?'val-warn':'');
+            const getStockTextClass = (v) => v>160?'text-red-700':(v>100?'text-yellow-700':(v<0?'text-red-500':'text-blue-600'));
 
-            const loadMondayData = () => {
-                const monData = rawHome.value[0] || [];
-                dbRef.child(`days/${drawer.value.key}/customList`).set(monData);
-                drawer.value.show = false; // Close to refresh logic
-            };
-
-            // Parsers
+            // CSV Parsers
             const parseRoute = (txt) => {
-                const rows = txt.trim().split('\n').slice(1);
+                const r = txt.split('\n').slice(1);
                 const res = [0,0,0,0,0,0,0];
-                rows.forEach(r => {
-                    const c = r.split(',');
-                    if(c.length<3) return;
+                r.forEach(row => {
+                    const c = row.split(','); if(c.length<3)return;
                     for(let d=0; d<7; d++) {
-                        const sIdx = d===0 ? 6 : d-1; 
-                        const base = 3 + (sIdx*5);
-                        let sum = 0;
-                        for(let k=0; k<5; k++) sum += (parseInt(c[base+k]?.replace(/２/g,'2'))||0);
-                        res[d] += sum;
+                        let sum=0; for(let k=0; k<5; k++) sum+=(parseInt(c[(3+((d===0?6:d-1)*5))+k]?.replace(/２/g,'2'))||0);
+                        res[d]+=sum;
                     }
                 });
                 rawRoute.value = res;
             };
             const parseHome = (txt) => {
-                const rows = txt.trim().split('\n').slice(1);
-                const days = [[],[],[],[],[]]; 
-                rows.forEach(r => {
-                    const c = r.split(',');
-                    if(c.length<2) return;
+                const r = txt.split('\n').slice(1);
+                const d = [[],[],[],[],[]];
+                r.forEach(row => {
+                    const c = row.split(','); if(c.length<2)return;
                     for(let i=0; i<5; i++) {
-                        const big = parseInt(c[2 + i*2]) || 0;
-                        const small = parseInt(c[3 + i*2]) || 0;
-                        if(big>0 || small>0) days[i].push({ uuid: c[0], name: c[1], big, small });
+                        const b=parseInt(c[2+i*2])||0, s=parseInt(c[3+i*2])||0;
+                        if(b||s) d[i].push({uuid:c[0], name:c[1], big:b, small:s});
                     }
                 });
-                rawHome.value = days;
+                rawHome.value = d;
             };
 
-            const adj = (n) => drawer.value.val = parseFloat((drawer.value.val+n).toFixed(1));
-            const btnCircle = "w-8 h-8 rounded-full bg-white shadow flex items-center justify-center font-bold text-lg active:scale-95";
-
-            return { 
-                milkBankDays, todayEndStock, viewMode, drawer, sidebarOpen, firebaseConnected,
-                openDrawer, saveDrawer, adj, openChecklist, toggleStatus, loadMondayData, togglePeak,
-                getCellClass, getStockClass, getStockTextClass, getHomeSummary, btnCircle
-            };
+            return { days, todayEndStock, todayStr, viewMode, drawer, sidebarOpen, toast, firebaseConnected, 
+                     edit, save, adj, toggleView:()=>viewMode.value=viewMode.value==='list'?'calendar':'list', 
+                     togglePeak, toggleStatus, loadMonday, getCellClass, getStockClass, getStockTextClass };
         }
     }).mount('#app');
 </script>
